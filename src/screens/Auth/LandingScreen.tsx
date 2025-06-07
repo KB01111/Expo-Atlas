@@ -22,7 +22,7 @@ const LandingScreen: React.FC = () => {
   const handleGoogleAuth = async () => {
     try {
       const { createdSessionId, setActive } = await startOAuthFlow();
-      if (createdSessionId) {
+      if (createdSessionId && setActive) {
         setActive({ session: createdSessionId });
       }
     } catch (err) {

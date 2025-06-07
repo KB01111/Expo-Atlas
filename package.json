@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.13.0",
+    "@expo/metro-runtime": "~5.0.4",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-community/masked-view": "^0.1.11",
     "@react-navigation/bottom-tabs": "^7.3.14",
@@ -26,21 +27,24 @@
     "expo-system-ui": "^5.0.8",
     "expo-web-browser": "^14.1.6",
     "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-native": "0.79.3",
     "react-native-chart-kit": "^6.12.0",
-    "react-native-gesture-handler": "^2.25.0",
+    "react-native-gesture-handler": "~2.24.0",
     "react-native-modal": "^14.0.0-rc.1",
-    "react-native-reanimated": "^3.18.0",
-    "react-native-safe-area-context": "^5.4.1",
+    "react-native-reanimated": "~3.17.4",
+    "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "^4.11.1",
     "react-native-super-grid": "^6.0.1",
-    "react-native-svg": "^15.12.0",
+    "react-native-svg": "15.11.2",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-web": "^0.20.0",
     "victory-native": "^41.17.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
+    "@types/react-native": "^0.72.8",
     "typescript": "~5.8.3"
   },
   "private": true

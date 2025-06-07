@@ -23,8 +23,8 @@ const lightTheme: AppTheme = {
     warning: '#F59E0B',
   },
   gradients: {
-    primary: ['#3B82F6', '#8B5CF6'],
-    hero: ['#667EEA', '#764BA2', '#F093FB'],
+    primary: ['#3B82F6', '#8B5CF6'] as const,
+    hero: ['#667EEA', '#764BA2', '#F093FB'] as const,
   },
 };
 
@@ -42,8 +42,8 @@ const darkTheme: AppTheme = {
     warning: '#FBBF24',
   },
   gradients: {
-    primary: ['#60A5FA', '#A78BFA'],
-    hero: ['#667EEA', '#764BA2', '#F093FB'],
+    primary: ['#60A5FA', '#A78BFA'] as const,
+    hero: ['#667EEA', '#764BA2', '#F093FB'] as const,
   },
 };
 

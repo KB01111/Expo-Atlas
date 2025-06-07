@@ -101,7 +101,7 @@ export interface AppTheme {
     warning: string;
   };
   gradients: {
-    primary: string[];
-    hero: string[];
+    primary: readonly [string, string, ...string[]];
+    hero: readonly [string, string, ...string[]];
   };
 }

@@ -45,7 +45,7 @@ const TabNavigator: React.FC = () => {
               iconName = focused ? 'settings' : 'settings-outline';
               break;
             default:
-              iconName = 'circle';
+              iconName = 'ellipse';
               break;
           }
 

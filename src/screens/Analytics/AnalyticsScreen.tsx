@@ -1,8 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../contexts/ThemeContext';
+
+// Conditional imports for web compatibility
+let PieChart: any;
+if (Platform.OS === 'web') {
+  const WebChart = require('../../components/charts/WebChart').default;
+  PieChart = WebChart;
+} else {
+  const ChartKit = require('react-native-chart-kit');
+  PieChart = ChartKit.PieChart;
+}
 
 const { width } = Dimensions.get('window');
 
@@ -69,11 +78,12 @@ const AnalyticsScreen: React.FC = () => {
             data={usageData}
             width={width - 48}
             height={220}
-            chartConfig={chartConfig}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="15"
-            absolute
+            title="Usage Distribution"
+            chartConfig={Platform.OS !== 'web' ? chartConfig : undefined}
+            accessor={Platform.OS !== 'web' ? "population" : undefined}
+            backgroundColor={Platform.OS !== 'web' ? "transparent" : undefined}
+            paddingLeft={Platform.OS !== 'web' ? "15" : undefined}
+            absolute={Platform.OS !== 'web' ? true : undefined}
           />
         </View>
 

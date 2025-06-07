@@ -7,9 +7,21 @@ import {
   RefreshControl,
   Dimensions,
 } from 'react-native';
+import { Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../../contexts/ThemeContext';
+
+// Conditional imports for web compatibility
+let LineChart: any, BarChart: any;
+if (Platform.OS === 'web') {
+  const WebChart = require('../../components/charts/WebChart').default;
+  LineChart = WebChart;
+  BarChart = WebChart;
+} else {
+  const ChartKit = require('react-native-chart-kit');
+  LineChart = ChartKit.LineChart;
+  BarChart = ChartKit.BarChart;
+}
 import { supabaseService } from '../../services/supabase';
 import { DashboardMetrics } from '../../types';
 
@@ -148,9 +160,10 @@ const DashboardScreen: React.FC = () => {
             data={taskData}
             width={width - 48}
             height={200}
-            chartConfig={chartConfig}
-            bezier
-            style={styles.chart}
+            title="Task Activity"
+            chartConfig={Platform.OS !== 'web' ? chartConfig : undefined}
+            bezier={Platform.OS !== 'web'}
+            style={Platform.OS !== 'web' ? styles.chart : undefined}
           />
         </View>
 
@@ -162,8 +175,11 @@ const DashboardScreen: React.FC = () => {
             data={performanceData}
             width={width - 48}
             height={200}
-            chartConfig={chartConfig}
-            style={styles.chart}
+            title="System Performance"
+            yAxisLabel={Platform.OS !== 'web' ? "" : undefined}
+            yAxisSuffix={Platform.OS !== 'web' ? "" : undefined}
+            chartConfig={Platform.OS !== 'web' ? chartConfig : undefined}
+            style={Platform.OS !== 'web' ? styles.chart : undefined}
           />
         </View>
 
