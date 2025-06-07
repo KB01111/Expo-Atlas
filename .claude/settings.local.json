@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo start:*)",
+      "Bash(npx eas-cli:*)",
+      "Bash(npx eas:*)"
+    ],
+    "deny": []
+  }
+}

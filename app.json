@@ -1,7 +1,10 @@
 {
   "expo": {
+    "cli": {
+      "appVersionSource": "remote"
+    },
     "name": "KB-Atlas Mobile",
-    "slug": "kb-atlas-mobile",
+    "slug": "kb-atlas",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -42,7 +45,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "6ca03950-5509-4afc-842b-06c983d4d159"
       }
     }
   }
