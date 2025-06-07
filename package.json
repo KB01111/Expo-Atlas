@@ -1,0 +1,47 @@
+{
+  "name": "expo-atlas",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@clerk/clerk-expo": "^2.13.0",
+    "@expo/vector-icons": "^14.1.0",
+    "@react-native-community/masked-view": "^0.1.11",
+    "@react-navigation/bottom-tabs": "^7.3.14",
+    "@react-navigation/drawer": "^7.4.1",
+    "@react-navigation/native": "^7.1.10",
+    "@react-navigation/stack": "^7.3.3",
+    "@supabase/supabase-js": "^2.50.0",
+    "expo": "~53.0.10",
+    "expo-auth-session": "^6.2.0",
+    "expo-constants": "^17.1.6",
+    "expo-linear-gradient": "^14.1.5",
+    "expo-secure-store": "^14.2.3",
+    "expo-status-bar": "~2.2.3",
+    "expo-system-ui": "^5.0.8",
+    "expo-web-browser": "^14.1.6",
+    "react": "19.0.0",
+    "react-native": "0.79.3",
+    "react-native-chart-kit": "^6.12.0",
+    "react-native-gesture-handler": "^2.25.0",
+    "react-native-modal": "^14.0.0-rc.1",
+    "react-native-reanimated": "^3.18.0",
+    "react-native-safe-area-context": "^5.4.1",
+    "react-native-screens": "^4.11.1",
+    "react-native-super-grid": "^6.0.1",
+    "react-native-svg": "^15.12.0",
+    "react-native-vector-icons": "^10.2.0",
+    "victory-native": "^41.17.3"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}
