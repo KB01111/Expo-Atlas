@@ -25,9 +25,11 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 - Authentication handled by Clerk with conditional rendering based on sign-in status
 
 **Theme System:**
-- Centralized theme context (`ThemeContext`) supporting light, dark, and system themes
-- Gradient-based design with consistent color schemes
-- Theme switching affects entire app through context provider
+- Enhanced theme context with modern Indigo/Pink gradient palette
+- Sophisticated light/dark themes with improved contrast and accessibility
+- Comprehensive design system with spacing, border radius, shadows, and animations
+- Reusable component library (Button, Card, StatusBadge, AnimatedView)
+- Consistent typography hierarchy and visual elements
 
 **Data Layer:**
 - Supabase client configured in `src/services/supabase.ts` using KB01111's Project (dgqhxtrvoebwhjsllcck)
@@ -47,8 +49,17 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 - `EXPO_PUBLIC_SUPABASE_URL` - Supabase project URL  
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 
-**Screen Organization:**
-Each main feature has its own screen directory under `src/screens/` with components following the pattern `FeatureScreen.tsx`. Components are organized by domain (Auth, Dashboard, Agents, etc.) rather than by technical concerns.
+**Component Architecture:**
+- Screen organization under `src/screens/` with domain-based structure
+- Reusable UI components in `src/components/ui/` with consistent API
+- Shared styling system in `src/styles/shared.ts` for consistency
+- Animated components with built-in micro-interactions
+
+**Development Guidelines:**
+- Use shared theme system for all styling decisions
+- Implement animations using the AnimatedView component
+- Follow the established component patterns for consistency
+- Utilize the comprehensive roadmap in `FEATURE_ROADMAP.md` for feature planning
 
 **Type Safety:**
-TypeScript is configured with strict mode. Types are centralized in `src/types/index.ts` and should be extended when adding new features.
+TypeScript is configured with strict mode. Enhanced type definitions include theme system, animations, and component props. Types are centralized in `src/types/index.ts`.

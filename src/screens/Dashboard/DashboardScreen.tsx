@@ -10,6 +10,7 @@ import {
 import { Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
+import { createSharedStyles, getStatusColor } from '../../styles/shared';
 
 // Conditional imports for web compatibility
 let LineChart: any, BarChart: any;
@@ -29,6 +30,7 @@ const { width } = Dimensions.get('window');
 
 const DashboardScreen: React.FC = () => {
   const { theme, isDark } = useTheme();
+  const sharedStyles = createSharedStyles(theme);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -90,8 +92,8 @@ const DashboardScreen: React.FC = () => {
 
   if (loading || !metrics) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Text style={[styles.loadingText, { color: theme.colors.text }]}>
+      <View style={[sharedStyles.container, sharedStyles.center]}>
+        <Text style={[sharedStyles.body, { textAlign: 'center' }]}>
           Loading dashboard...
         </Text>
       </View>
@@ -100,60 +102,60 @@ const DashboardScreen: React.FC = () => {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={sharedStyles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <LinearGradient
         colors={theme.gradients.primary}
-        style={styles.header}
+        style={sharedStyles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
-        <Text style={styles.headerTitle}>Dashboard</Text>
-        <Text style={styles.headerSubtitle}>Real-time system overview</Text>
+        <Text style={sharedStyles.headerTitle}>Dashboard</Text>
+        <Text style={sharedStyles.headerSubtitle}>Real-time system overview</Text>
       </LinearGradient>
 
-      <View style={styles.content}>
-        <View style={styles.metricsGrid}>
-          <View style={[styles.metricCard, { backgroundColor: theme.colors.surface }]}>
-            <Text style={[styles.metricValue, { color: theme.colors.primary }]}>
+      <View style={sharedStyles.content}>
+        <View style={[sharedStyles.row, { flexWrap: 'wrap' }, sharedStyles.gapMD]}>
+          <View style={sharedStyles.metricCard}>
+            <Text style={[sharedStyles.metricValue, { color: theme.colors.primary }]}>
               {metrics.activeAgents}/{metrics.totalAgents}
             </Text>
-            <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>
+            <Text style={sharedStyles.metricLabel}>
               Active Agents
             </Text>
           </View>
 
-          <View style={[styles.metricCard, { backgroundColor: theme.colors.surface }]}>
-            <Text style={[styles.metricValue, { color: theme.colors.success }]}>
+          <View style={sharedStyles.metricCard}>
+            <Text style={[sharedStyles.metricValue, { color: theme.colors.success }]}>
               {metrics.completedTasks}
             </Text>
-            <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>
+            <Text style={sharedStyles.metricLabel}>
               Completed Tasks
             </Text>
           </View>
 
-          <View style={[styles.metricCard, { backgroundColor: theme.colors.surface }]}>
-            <Text style={[styles.metricValue, { color: theme.colors.warning }]}>
+          <View style={sharedStyles.metricCard}>
+            <Text style={[sharedStyles.metricValue, { color: theme.colors.accent }]}>
               {metrics.averageSuccessRate.toFixed(1)}%
             </Text>
-            <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>
+            <Text style={sharedStyles.metricLabel}>
               Success Rate
             </Text>
           </View>
 
-          <View style={[styles.metricCard, { backgroundColor: theme.colors.surface }]}>
-            <Text style={[styles.metricValue, { color: theme.colors.secondary }]}>
+          <View style={sharedStyles.metricCard}>
+            <Text style={[sharedStyles.metricValue, { color: theme.colors.secondary }]}>
               ${metrics.monthlyCost.toFixed(2)}
             </Text>
-            <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>
+            <Text style={sharedStyles.metricLabel}>
               Monthly Cost
             </Text>
           </View>
         </View>
 
-        <View style={[styles.chartContainer, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.chartTitle, { color: theme.colors.text }]}>
+        <View style={sharedStyles.cardLarge}>
+          <Text style={sharedStyles.subtitle}>
             Task Activity (7 days)
           </Text>
           <LineChart
@@ -167,8 +169,8 @@ const DashboardScreen: React.FC = () => {
           />
         </View>
 
-        <View style={[styles.chartContainer, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.chartTitle, { color: theme.colors.text }]}>
+        <View style={sharedStyles.cardLarge}>
+          <Text style={sharedStyles.subtitle}>
             System Performance
           </Text>
           <BarChart
@@ -183,26 +185,26 @@ const DashboardScreen: React.FC = () => {
           />
         </View>
 
-        <View style={[styles.statusContainer, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.statusTitle, { color: theme.colors.text }]}>
+        <View style={sharedStyles.card}>
+          <Text style={sharedStyles.subtitle}>
             System Status
           </Text>
-          <View style={styles.statusList}>
-            <View style={styles.statusItem}>
+          <View style={sharedStyles.gapMD}>
+            <View style={[sharedStyles.row, sharedStyles.gapMD]}>
               <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
-              <Text style={[styles.statusText, { color: theme.colors.text }]}>
+              <Text style={sharedStyles.body}>
                 API Services
               </Text>
             </View>
-            <View style={styles.statusItem}>
+            <View style={[sharedStyles.row, sharedStyles.gapMD]}>
               <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
-              <Text style={[styles.statusText, { color: theme.colors.text }]}>
+              <Text style={sharedStyles.body}>
                 Database
               </Text>
             </View>
-            <View style={styles.statusItem}>
+            <View style={[sharedStyles.row, sharedStyles.gapMD]}>
               <View style={[styles.statusDot, { backgroundColor: theme.colors.warning }]} />
-              <Text style={[styles.statusText, { color: theme.colors.text }]}>
+              <Text style={sharedStyles.body}>
                 Background Jobs
               </Text>
             </View>
@@ -214,91 +216,13 @@ const DashboardScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    padding: 24,
-    paddingTop: 60,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#F1F5F9',
-    opacity: 0.9,
-  },
-  content: {
-    padding: 16,
-    gap: 16,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  metricCard: {
-    flex: 1,
-    minWidth: '45%',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  metricValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  metricLabel: {
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  chartContainer: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
   chart: {
     borderRadius: 8,
-  },
-  statusContainer: {
-    padding: 16,
-    borderRadius: 12,
-  },
-  statusTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  statusList: {
-    gap: 12,
-  },
-  statusItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
   },
   statusDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 16,
-  },
-  loadingText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 100,
   },
 });
 

@@ -120,9 +120,36 @@ export interface AppTheme {
     error: string;
     success: string;
     warning: string;
+    accent: string;
+    info: string;
+    surfaceHover: string;
+    overlay: string;
   };
   gradients: {
     primary: readonly [string, string, ...string[]];
     hero: readonly [string, string, ...string[]];
+    card: readonly [string, string, ...string[]];
+    subtle: readonly [string, string, ...string[]];
+  };
+  spacing: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+    xxl: number;
+  };
+  borderRadius: {
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+    full: number;
+  };
+  shadows: {
+    sm: any;
+    md: any;
+    lg: any;
+    xl: any;
   };
 }

@@ -13,9 +13,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabaseService } from '../../services/supabase';
 import { Agent } from '../../types';
+import { Card, StatusBadge, AnimatedView } from '../../components/ui';
+import { createSharedStyles } from '../../styles/shared';
 
 const AgentsScreen: React.FC = () => {
   const { theme } = useTheme();
+  const sharedStyles = createSharedStyles(theme);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -60,44 +63,44 @@ const AgentsScreen: React.FC = () => {
     }
   };
 
-  const renderAgent = ({ item }: { item: Agent }) => (
-    <TouchableOpacity style={[styles.agentCard, { backgroundColor: theme.colors.surface }]}>
-      <View style={styles.agentHeader}>
-        <View style={styles.agentInfo}>
-          <Text style={[styles.agentName, { color: theme.colors.text }]}>
-            {item.name}
-          </Text>
-          <Text style={[styles.agentDescription, { color: theme.colors.textSecondary }]}>
-            {item.description || 'No description available'}
-          </Text>
+  const renderAgent = ({ item, index }: { item: Agent; index: number }) => (
+    <AnimatedView animation="slideUp" delay={index * 100}>
+      <Card variant="default" onPress={() => console.log('Agent pressed:', item.id)}>
+        <View style={sharedStyles.rowBetween}>
+          <View style={{ flex: 1 }}>
+            <Text style={sharedStyles.subtitle}>
+              {item.name}
+            </Text>
+            <Text style={sharedStyles.caption}>
+              {item.description || 'No description available'}
+            </Text>
+          </View>
+          <StatusBadge status={item.status} variant="subtle" />
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{item.status}</Text>
-        </View>
-      </View>
 
-      <View style={styles.agentStats}>
-        <View style={styles.stat}>
-          <Text style={[styles.statValue, { color: theme.colors.primary }]}>
-            {item.tasks || 0}
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-            Tasks
-          </Text>
+        <View style={[sharedStyles.row, sharedStyles.gapLG, { marginTop: theme.spacing.md }]}>
+          <View style={sharedStyles.center}>
+            <Text style={[sharedStyles.title, { color: theme.colors.primary, fontSize: 20 }]}>
+              {item.tasks || 0}
+            </Text>
+            <Text style={sharedStyles.label}>
+              Tasks
+            </Text>
+          </View>
+          <View style={sharedStyles.center}>
+            <Text style={[sharedStyles.title, { color: theme.colors.success, fontSize: 20 }]}>
+              {(item.successRate || 0).toFixed(1)}%
+            </Text>
+            <Text style={sharedStyles.label}>
+              Success Rate
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.actionButton}>
+            <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
+          </TouchableOpacity>
         </View>
-        <View style={styles.stat}>
-          <Text style={[styles.statValue, { color: theme.colors.success }]}>
-            {(item.successRate || 0).toFixed(1)}%
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-            Success Rate
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+      </Card>
+    </AnimatedView>
   );
 
   return (
@@ -112,11 +115,11 @@ const AgentsScreen: React.FC = () => {
         <Text style={styles.headerSubtitle}>Manage your AI agents</Text>
       </LinearGradient>
 
-      <View style={styles.content}>
-        <View style={[styles.searchContainer, { backgroundColor: theme.colors.surface }]}>
+      <View style={sharedStyles.content}>
+        <View style={sharedStyles.searchContainer}>
           <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
           <TextInput
-            style={[styles.searchInput, { color: theme.colors.text }]}
+            style={sharedStyles.searchInput}
             placeholder="Search agents..."
             placeholderTextColor={theme.colors.textSecondary}
             value={searchQuery}
@@ -128,12 +131,12 @@ const AgentsScreen: React.FC = () => {
           data={filteredAgents}
           renderItem={renderAgent}
           keyExtractor={item => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={sharedStyles.gapMD}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           showsVerticalScrollIndicator={false}
         />
 
-        <TouchableOpacity style={[styles.fab, { backgroundColor: theme.colors.primary }]}>
+        <TouchableOpacity style={sharedStyles.fab}>
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
