@@ -1,72 +1,82 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabaseService } from '../../services/supabase';
+import { Execution } from '../../types';
 
-const mockTransactions = [
-  {
-    id: '1',
-    amount: -125.50,
-    description: 'Office Supplies',
-    category: 'Business Expenses',
-    date: '2024-01-15',
-    basCategory: 'Deductible',
-    confidence: 92.5,
-    reviewed: false,
-  },
-  {
-    id: '2',
-    amount: -89.99,
-    description: 'Software License',
-    category: 'IT Services',
-    date: '2024-01-14',
-    basCategory: 'Deductible',
-    confidence: 98.1,
-    reviewed: true,
-  },
-];
 
 const FinancialScreen: React.FC = () => {
   const { theme } = useTheme();
+  const [executions, setExecutions] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState<any>(null);
 
-  const renderTransaction = ({ item }: { item: any }) => (
+  const loadData = async () => {
+    try {
+      const [executionData, metricsData] = await Promise.all([
+        supabaseService.getExecutions(),
+        supabaseService.getDashboardMetrics()
+      ]);
+      setExecutions(executionData);
+      setMetrics(metricsData);
+    } catch (error) {
+      console.error('Error loading financial data:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
+
+  const renderExecution = ({ item }: { item: any }) => (
     <TouchableOpacity style={[styles.transactionCard, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.transactionHeader}>
         <View style={styles.transactionInfo}>
           <Text style={[styles.transactionDescription, { color: theme.colors.text }]}>
-            {item.description}
+            {item.agent?.name || `Execution ${item.id.slice(0, 8)}`}
           </Text>
           <Text style={[styles.transactionCategory, { color: theme.colors.textSecondary }]}>
-            {item.category}
+            {item.status} • {new Date(item.started_at).toLocaleDateString()}
           </Text>
         </View>
         <Text style={[
           styles.transactionAmount,
-          { color: item.amount < 0 ? theme.colors.error : theme.colors.success }
+          { color: theme.colors.primary }
         ]}>
-          ${Math.abs(item.amount).toFixed(2)}
+          ${(item.cost || 0).toFixed(4)}
         </Text>
       </View>
 
       <View style={styles.transactionFooter}>
         <View style={styles.basInfo}>
           <Text style={[styles.basCategory, { color: theme.colors.secondary }]}>
-            BAS: {item.basCategory}
+            Tokens: {item.tokens_used || 0}
           </Text>
           <View style={styles.confidenceContainer}>
             <Text style={[styles.confidenceText, { color: theme.colors.textSecondary }]}>
-              {item.confidence.toFixed(1)}% confidence
+              {item.user?.full_name || item.user?.email || 'Unknown user'}
             </Text>
             <View style={[
               styles.confidenceDot,
-              { backgroundColor: item.confidence > 90 ? theme.colors.success : theme.colors.warning }
+              { backgroundColor: item.status === 'completed' ? theme.colors.success : 
+                item.status === 'failed' ? theme.colors.error : theme.colors.warning }
             ]} />
           </View>
         </View>
-        {!item.reviewed && (
+        {item.status === 'pending' && (
           <TouchableOpacity style={[styles.reviewButton, { backgroundColor: theme.colors.primary }]}>
-            <Text style={styles.reviewButtonText}>Review</Text>
+            <Text style={styles.reviewButtonText}>View</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -94,7 +104,7 @@ const FinancialScreen: React.FC = () => {
                 This Month
               </Text>
               <Text style={[styles.summaryAmount, { color: theme.colors.success }]}>
-                $2,345.67
+                ${(metrics?.monthlyCost || 0).toFixed(2)}
               </Text>
             </View>
           </View>
@@ -106,7 +116,7 @@ const FinancialScreen: React.FC = () => {
                 Pending Review
               </Text>
               <Text style={[styles.summaryCount, { color: theme.colors.warning }]}>
-                12 items
+                {executions.filter(e => e.status === 'pending').length} items
               </Text>
             </View>
           </View>
@@ -114,7 +124,7 @@ const FinancialScreen: React.FC = () => {
 
         <View style={[styles.sectionHeader, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Recent Transactions
+            Recent Executions
           </Text>
           <TouchableOpacity>
             <Ionicons name="filter" size={20} color={theme.colors.textSecondary} />
@@ -122,11 +132,12 @@ const FinancialScreen: React.FC = () => {
         </View>
 
         <FlatList
-          data={mockTransactions}
-          renderItem={renderTransaction}
+          data={executions.slice(0, 20)}
+          renderItem={renderExecution}
           keyExtractor={item => item.id}
           scrollEnabled={false}
           contentContainerStyle={styles.transactionsList}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       </ScrollView>
     </View>

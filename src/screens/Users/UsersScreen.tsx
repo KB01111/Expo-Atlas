@@ -1,44 +1,49 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabaseService } from '../../services/supabase';
+import { User } from '../../types';
 
-const mockUsers = [
-  {
-    id: '1',
-    email: 'admin@example.com',
-    firstName: 'Admin',
-    lastName: 'User',
-    role: 'admin',
-    createdAt: '2024-01-01T00:00:00Z',
-    lastActive: '2024-01-15T10:30:00Z',
-  },
-  {
-    id: '2',
-    email: 'user@example.com',
-    firstName: 'Regular',
-    lastName: 'User',
-    role: 'user',
-    createdAt: '2024-01-05T00:00:00Z',
-    lastActive: '2024-01-14T15:45:00Z',
-  },
-];
 
 const UsersScreen: React.FC = () => {
   const { theme } = useTheme();
+  const [users, setUsers] = useState<User[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return theme.colors.error;
-      case 'user':
-        return theme.colors.primary;
-      case 'viewer':
-        return theme.colors.textSecondary;
-      default:
-        return theme.colors.textSecondary;
+  const loadUsers = async () => {
+    try {
+      const data = await supabaseService.getUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadUsers();
+  };
+
+  const getRoleColor = () => {
+    return theme.colors.primary; // All users have same role for now
+  };
+
+  const getInitials = (user: User) => {
+    if (user.full_name) {
+      const names = user.full_name.split(' ');
+      return names.map(name => name[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return user.email.slice(0, 2).toUpperCase();
   };
 
   const renderUser = ({ item }: { item: any }) => (
@@ -46,25 +51,25 @@ const UsersScreen: React.FC = () => {
       <View style={styles.userHeader}>
         <View style={styles.avatar}>
           <Text style={[styles.avatarText, { color: theme.colors.primary }]}>
-            {item.firstName?.[0]}{item.lastName?.[0]}
+            {getInitials(item)}
           </Text>
         </View>
         <View style={styles.userInfo}>
           <Text style={[styles.userName, { color: theme.colors.text }]}>
-            {item.firstName} {item.lastName}
+            {item.full_name || 'Unnamed User'}
           </Text>
           <Text style={[styles.userEmail, { color: theme.colors.textSecondary }]}>
             {item.email}
           </Text>
         </View>
-        <View style={[styles.roleBadge, { backgroundColor: getRoleColor(item.role) }]}>
-          <Text style={styles.roleText}>{item.role}</Text>
+        <View style={[styles.roleBadge, { backgroundColor: getRoleColor() }]}>
+          <Text style={styles.roleText}>User</Text>
         </View>
       </View>
 
       <View style={styles.userFooter}>
         <Text style={[styles.lastActive, { color: theme.colors.textSecondary }]}>
-          Last active: {new Date(item.lastActive).toLocaleDateString()}
+          Created: {new Date(item.created_at).toLocaleDateString()}
         </Text>
         <TouchableOpacity>
           <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
@@ -89,7 +94,7 @@ const UsersScreen: React.FC = () => {
         <View style={styles.statsContainer}>
           <View style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
             <Text style={[styles.statValue, { color: theme.colors.primary }]}>
-              {mockUsers.length}
+              {users.length}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
               Total Users
@@ -98,10 +103,10 @@ const UsersScreen: React.FC = () => {
 
           <View style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
             <Text style={[styles.statValue, { color: theme.colors.success }]}>
-              {mockUsers.filter(u => u.role === 'admin').length}
+              {users.filter(u => u.full_name).length}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
-              Admins
+              With Names
             </Text>
           </View>
 
@@ -116,11 +121,12 @@ const UsersScreen: React.FC = () => {
         </View>
 
         <FlatList
-          data={mockUsers}
+          data={users}
           renderItem={renderUser}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.usersList}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
 
         <TouchableOpacity style={[styles.fab, { backgroundColor: theme.colors.primary }]}>

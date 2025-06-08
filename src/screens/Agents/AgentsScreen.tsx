@@ -44,7 +44,7 @@ const AgentsScreen: React.FC = () => {
 
   const filteredAgents = agents.filter(agent =>
     agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    agent.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (agent.description && agent.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const getStatusColor = (status: string) => {
@@ -68,7 +68,7 @@ const AgentsScreen: React.FC = () => {
             {item.name}
           </Text>
           <Text style={[styles.agentDescription, { color: theme.colors.textSecondary }]}>
-            {item.description}
+            {item.description || 'No description available'}
           </Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
@@ -79,7 +79,7 @@ const AgentsScreen: React.FC = () => {
       <View style={styles.agentStats}>
         <View style={styles.stat}>
           <Text style={[styles.statValue, { color: theme.colors.primary }]}>
-            {item.tasks}
+            {item.tasks || 0}
           </Text>
           <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
             Tasks
@@ -87,7 +87,7 @@ const AgentsScreen: React.FC = () => {
         </View>
         <View style={styles.stat}>
           <Text style={[styles.statValue, { color: theme.colors.success }]}>
-            {item.successRate.toFixed(1)}%
+            {(item.successRate || 0).toFixed(1)}%
           </Text>
           <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
             Success Rate

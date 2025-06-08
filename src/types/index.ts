@@ -1,60 +1,81 @@
 export interface User {
   id: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
-  role: 'admin' | 'user' | 'viewer';
-  createdAt: string;
-  updatedAt: string;
+  full_name?: string;
+  avatar_url?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Agent {
   id: string;
+  user_id?: string;
   name: string;
-  description: string;
+  description?: string;
   status: 'active' | 'inactive' | 'error';
-  type: string;
-  createdAt: string;
-  updatedAt: string;
-  lastActive?: string;
-  tasks: number;
-  successRate: number;
+  provider: string;
+  model: string;
+  configuration?: any;
+  created_at: string;
+  updated_at: string;
+  tasks?: number;
+  successRate?: number;
 }
 
-export interface Task {
+export interface Execution {
   id: string;
-  agentId: string;
-  name: string;
+  user_id?: string;
+  agent_id?: string;
+  team_id?: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
-  progress: number;
-  createdAt: string;
-  completedAt?: string;
-  duration?: number;
+  input?: string;
+  output?: string;
+  error?: string;
+  metadata?: any;
+  started_at: string;
+  completed_at?: string;
+  tokens_used?: number;
+  cost?: number;
 }
 
 export interface Workflow {
   id: string;
+  user_id?: string;
   name: string;
-  description: string;
-  status: 'active' | 'inactive' | 'draft';
-  nodes: WorkflowNode[];
-  connections: WorkflowConnection[];
-  createdAt: string;
-  updatedAt: string;
+  description?: string;
+  nodes?: any[];
+  edges?: any[];
+  created_at: string;
+  updated_at: string;
 }
 
-export interface WorkflowNode {
+export interface Team {
   id: string;
-  type: 'trigger' | 'agent' | 'condition' | 'action';
-  x: number;
-  y: number;
-  data: any;
+  user_id?: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface WorkflowConnection {
+export interface ChatSession {
   id: string;
-  sourceId: string;
-  targetId: string;
+  name: string;
+  user_id: string;
+  created_at: string;
+  last_active: string;
+  status: 'active' | 'closed';
+  metadata?: any;
+}
+
+export interface ChatMessage {
+  id: string;
+  session_id: string;
+  role: 'user' | 'agent' | 'system';
+  agent_id?: string;
+  content: string;
+  timestamp: string;
+  metadata?: any;
 }
 
 export interface Transaction {

@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Platform, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabaseService } from '../../services/supabase';
 
 // Conditional imports for web compatibility
 let PieChart: any;
@@ -17,37 +18,73 @@ const { width } = Dimensions.get('window');
 
 const AnalyticsScreen: React.FC = () => {
   const { theme } = useTheme();
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const usageData = [
-    {
-      name: 'Content Generation',
-      population: 35,
-      color: theme.colors.primary,
+  const loadData = async () => {
+    try {
+      const [analyticsData, metricsData] = await Promise.all([
+        supabaseService.getAnalytics(),
+        supabaseService.getDashboardMetrics()
+      ]);
+      setAnalytics(analyticsData);
+      setMetrics(metricsData);
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
+
+  // Process usage data from analytics
+  const getUsageData = () => {
+    if (!analytics || !analytics.usage) {
+      return [
+        {
+          name: 'No data',
+          population: 100,
+          color: theme.colors.textSecondary,
+          legendFontColor: theme.colors.text,
+          legendFontSize: 12,
+        }
+      ];
+    }
+
+    // Group by status for pie chart
+    const statusCounts = analytics.usage.reduce((acc: any, item: any) => {
+      acc[item.status] = (acc[item.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const colors = {
+      completed: theme.colors.success,
+      failed: theme.colors.error,
+      pending: theme.colors.warning,
+      running: theme.colors.primary,
+    };
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      name: status.charAt(0).toUpperCase() + status.slice(1),
+      population: count as number,
+      color: colors[status as keyof typeof colors] || theme.colors.textSecondary,
       legendFontColor: theme.colors.text,
       legendFontSize: 12,
-    },
-    {
-      name: 'Data Processing',
-      population: 28,
-      color: theme.colors.secondary,
-      legendFontColor: theme.colors.text,
-      legendFontSize: 12,
-    },
-    {
-      name: 'Analytics',
-      population: 22,
-      color: theme.colors.success,
-      legendFontColor: theme.colors.text,
-      legendFontSize: 12,
-    },
-    {
-      name: 'Other',
-      population: 15,
-      color: theme.colors.warning,
-      legendFontColor: theme.colors.text,
-      legendFontSize: 12,
-    },
-  ];
+    }));
+  };
+
+  const usageData = getUsageData();
 
   const chartConfig = {
     backgroundColor: theme.colors.surface,
@@ -69,7 +106,10 @@ const AnalyticsScreen: React.FC = () => {
         <Text style={styles.headerSubtitle}>Usage insights and metrics</Text>
       </LinearGradient>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View style={[styles.chartContainer, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.chartTitle, { color: theme.colors.text }]}>
             Usage Distribution
@@ -90,34 +130,34 @@ const AnalyticsScreen: React.FC = () => {
         <View style={styles.metricsGrid}>
           <View style={[styles.metricCard, { backgroundColor: theme.colors.surface }]}>
             <Text style={[styles.metricValue, { color: theme.colors.primary }]}>
-              1,234
+              {metrics?.totalTasks || 0}
             </Text>
             <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>
-              Total Requests
+              Total Executions
             </Text>
           </View>
 
           <View style={[styles.metricCard, { backgroundColor: theme.colors.surface }]}>
             <Text style={[styles.metricValue, { color: theme.colors.success }]}>
-              98.5%
+              {(metrics?.averageSuccessRate || 0).toFixed(1)}%
             </Text>
             <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>
-              Uptime
+              Success Rate
             </Text>
           </View>
 
           <View style={[styles.metricCard, { backgroundColor: theme.colors.surface }]}>
             <Text style={[styles.metricValue, { color: theme.colors.warning }]}>
-              123ms
+              {analytics?.performance?.length || 0}
             </Text>
             <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>
-              Avg Response
+              Completed Tasks
             </Text>
           </View>
 
           <View style={[styles.metricCard, { backgroundColor: theme.colors.surface }]}>
             <Text style={[styles.metricValue, { color: theme.colors.secondary }]}>
-              $456
+              ${(metrics?.totalCost || 0).toFixed(2)}
             </Text>
             <Text style={[styles.metricLabel, { color: theme.colors.textSecondary }]}>
               Total Cost
