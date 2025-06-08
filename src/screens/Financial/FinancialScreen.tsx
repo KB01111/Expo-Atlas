@@ -39,6 +39,48 @@ const FinancialScreen: React.FC = () => {
     loadData();
   };
 
+  const handleStopExecution = async (executionId: string) => {
+    try {
+      const result = await supabaseService.stopExecution(executionId);
+      if (result) {
+        setExecutions(prev => 
+          prev.map(exec => 
+            exec.id === executionId 
+              ? { ...exec, status: 'failed', error: 'Stopped by user' }
+              : exec
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error stopping execution:', error);
+    }
+  };
+
+  const handleViewExecution = (executionId: string) => {
+    console.log('View execution:', executionId);
+    // Navigate to execution details
+  };
+
+  const handleRetryExecution = async (executionId: string) => {
+    try {
+      const originalExecution = executions.find(e => e.id === executionId);
+      if (!originalExecution) return;
+
+      const newExecution = await supabaseService.createExecution({
+        agent_id: originalExecution.agent_id,
+        user_id: originalExecution.user_id,
+        input: originalExecution.input,
+        status: 'pending'
+      });
+
+      if (newExecution) {
+        setExecutions(prev => [newExecution, ...prev]);
+      }
+    } catch (error) {
+      console.error('Error retrying execution:', error);
+    }
+  };
+
   const renderExecution = ({ item }: { item: any }) => (
     <TouchableOpacity style={[styles.transactionCard, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.transactionHeader}>
@@ -74,11 +116,32 @@ const FinancialScreen: React.FC = () => {
             ]} />
           </View>
         </View>
-        {item.status === 'pending' && (
-          <TouchableOpacity style={[styles.reviewButton, { backgroundColor: theme.colors.primary }]}>
-            <Text style={styles.reviewButtonText}>View</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.executionActions}>
+          {item.status === 'running' && (
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: theme.colors.error }]}
+              onPress={() => handleStopExecution(item.id)}
+            >
+              <Text style={styles.actionButtonText}>Stop</Text>
+            </TouchableOpacity>
+          )}
+          {item.status === 'pending' && (
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+              onPress={() => handleViewExecution(item.id)}
+            >
+              <Text style={styles.actionButtonText}>View</Text>
+            </TouchableOpacity>
+          )}
+          {(item.status === 'completed' || item.status === 'failed') && (
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: theme.colors.secondary }]}
+              onPress={() => handleRetryExecution(item.id)}
+            >
+              <Text style={styles.actionButtonText}>Retry</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -261,14 +324,18 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  reviewButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
+  executionActions: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  reviewButtonText: {
+  actionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  actionButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
   },
 });

@@ -5,6 +5,7 @@ import { ClerkProvider } from '@clerk/clerk-expo';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import { AuthProvider } from './src/contexts/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
@@ -15,8 +16,10 @@ export default function App() {
       <ClerkProvider publishableKey={publishableKey}>
         <SafeAreaProvider>
           <ThemeProvider>
-            <AppNavigator />
-            <StatusBar style="auto" />
+            <AuthProvider>
+              <AppNavigator />
+              <StatusBar style="auto" />
+            </AuthProvider>
           </ThemeProvider>
         </SafeAreaProvider>
       </ClerkProvider>

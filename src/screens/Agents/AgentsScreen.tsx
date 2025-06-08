@@ -13,8 +13,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabaseService } from '../../services/supabase';
 import { Agent } from '../../types';
-import { Card, StatusBadge, AnimatedView } from '../../components/ui';
+import { Card, StatusBadge, AnimatedView, SearchBar } from '../../components/ui';
 import { createSharedStyles } from '../../styles/shared';
+import AgentModal from '../../components/modals/AgentModal';
 
 const AgentsScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -23,6 +24,8 @@ const AgentsScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
   const loadAgents = async () => {
     try {
@@ -49,6 +52,31 @@ const AgentsScreen: React.FC = () => {
     agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (agent.description && agent.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const handleCreateAgent = () => {
+    setSelectedAgent(null);
+    setShowModal(true);
+  };
+
+  const handleEditAgent = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setShowModal(true);
+  };
+
+  const handleDeleteAgent = async (agent: Agent) => {
+    const success = await supabaseService.deleteAgent(agent.id);
+    if (success) {
+      setAgents(prev => prev.filter(a => a.id !== agent.id));
+    }
+  };
+
+  const handleSaveAgent = (agent: Agent) => {
+    if (selectedAgent) {
+      setAgents(prev => prev.map(a => a.id === agent.id ? agent : a));
+    } else {
+      setAgents(prev => [...prev, agent]);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -95,7 +123,10 @@ const AgentsScreen: React.FC = () => {
               Success Rate
             </Text>
           </View>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleEditAgent(item)}
+          >
             <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
           </TouchableOpacity>
         </View>
@@ -116,16 +147,11 @@ const AgentsScreen: React.FC = () => {
       </LinearGradient>
 
       <View style={sharedStyles.content}>
-        <View style={sharedStyles.searchContainer}>
-          <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
-          <TextInput
-            style={sharedStyles.searchInput}
-            placeholder="Search agents..."
-            placeholderTextColor={theme.colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+        <SearchBar
+          placeholder="Search agents..."
+          onSearch={setSearchQuery}
+          value={searchQuery}
+        />
 
         <FlatList
           data={filteredAgents}
@@ -136,10 +162,17 @@ const AgentsScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         />
 
-        <TouchableOpacity style={sharedStyles.fab}>
+        <TouchableOpacity style={sharedStyles.fab} onPress={handleCreateAgent}>
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
+
+      <AgentModal
+        visible={showModal}
+        onClose={() => setShowModal(false)}
+        onSave={handleSaveAgent}
+        agent={selectedAgent}
+      />
     </View>
   );
 };

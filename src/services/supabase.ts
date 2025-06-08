@@ -253,4 +253,356 @@ export const supabaseService = {
       return [];
     }
   },
+
+  // Notifications
+  async getNotifications(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      return [];
+    }
+  },
+
+  async markNotificationRead(notificationId: string) {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      return false;
+    }
+  },
+
+  async createNotification(notification: Omit<any, 'id' | 'created_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert(notification)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating notification:', error);
+      return null;
+    }
+  },
+
+  // User Settings
+  async getUserSettings(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+      return null;
+    }
+  },
+
+  async updateUserSettings(userId: string, settings: Partial<any>) {
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .upsert({ user_id: userId, ...settings })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating user settings:', error);
+      return null;
+    }
+  },
+
+  // Agent Management
+  async createAgent(agent: Omit<any, 'id' | 'created_at' | 'updated_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('agents')
+        .insert(agent)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating agent:', error);
+      return null;
+    }
+  },
+
+  async updateAgent(agentId: string, updates: Partial<any>) {
+    try {
+      const { data, error } = await supabase
+        .from('agents')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', agentId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating agent:', error);
+      return null;
+    }
+  },
+
+  async deleteAgent(agentId: string) {
+    try {
+      const { error } = await supabase
+        .from('agents')
+        .delete()
+        .eq('id', agentId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting agent:', error);
+      return false;
+    }
+  },
+
+  // Workflow Management
+  async createWorkflow(workflow: Omit<any, 'id' | 'created_at' | 'updated_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('workflows')
+        .insert(workflow)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating workflow:', error);
+      return null;
+    }
+  },
+
+  async updateWorkflow(workflowId: string, updates: Partial<any>) {
+    try {
+      const { data, error } = await supabase
+        .from('workflows')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', workflowId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating workflow:', error);
+      return null;
+    }
+  },
+
+  // Execution Management
+  async createExecution(execution: Omit<any, 'id' | 'started_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('executions')
+        .insert({ ...execution, started_at: new Date().toISOString() })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating execution:', error);
+      return null;
+    }
+  },
+
+  async updateExecution(executionId: string, updates: Partial<any>) {
+    try {
+      const { data, error } = await supabase
+        .from('executions')
+        .update(updates)
+        .eq('id', executionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating execution:', error);
+      return null;
+    }
+  },
+
+  async stopExecution(executionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('executions')
+        .update({ 
+          status: 'failed',
+          error: 'Stopped by user',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', executionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error stopping execution:', error);
+      return null;
+    }
+  },
+
+  // User Management
+  async createUser(user: Omit<any, 'created_at' | 'updated_at'>) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          ...user,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return null;
+    }
+  },
+
+  async updateUser(userId: string, updates: Partial<any>) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return null;
+    }
+  },
+
+  // Chat Management
+  async createChatSession(session: Omit<any, 'id' | 'created_at' | 'last_active'>) {
+    try {
+      const { data, error } = await supabase
+        .from('chat_sessions')
+        .insert({
+          ...session,
+          created_at: new Date().toISOString(),
+          last_active: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating chat session:', error);
+      return null;
+    }
+  },
+
+  async getChatMessages(sessionId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('timestamp', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      return [];
+    }
+  },
+
+  async createChatMessage(message: Omit<any, 'id' | 'timestamp'>) {
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          ...message,
+          timestamp: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating chat message:', error);
+      return null;
+    }
+  },
+
+  // Search functionality
+  async searchAll(query: string) {
+    try {
+      const [agents, workflows, executions, users] = await Promise.all([
+        supabase
+          .from('agents')
+          .select('*')
+          .or(`name.ilike.%${query}%,description.ilike.%${query}%`),
+        supabase
+          .from('workflows')
+          .select('*')
+          .or(`name.ilike.%${query}%,description.ilike.%${query}%`),
+        supabase
+          .from('executions')
+          .select('*, agent:agents(name)')
+          .or(`input.ilike.%${query}%,output.ilike.%${query}%`),
+        supabase
+          .from('users')
+          .select('*')
+          .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
+      ]);
+
+      return {
+        agents: agents.data || [],
+        workflows: workflows.data || [],
+        executions: executions.data || [],
+        users: users.data || []
+      };
+    } catch (error) {
+      console.error('Error searching:', error);
+      return {
+        agents: [],
+        workflows: [],
+        executions: [],
+        users: []
+      };
+    }
+  },
 };

@@ -1,11 +1,56 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { createSharedStyles } from '../../styles/shared';
+import { supabaseService } from '../../services/supabase';
+import { UserSettings } from '../../types';
 
 const SettingsScreen: React.FC = () => {
   const { theme, themeMode, setThemeMode, isDark } = useTheme();
+  const { userId, signOut } = useAuth();
+  const sharedStyles = createSharedStyles(theme);
+  
+  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      const userSettings = await supabaseService.getUserSettings(userId);
+      setSettings(userSettings);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSetting = async (key: keyof UserSettings, value: any) => {
+    if (!userId) return;
+    
+    try {
+      const updatedSettings = await supabaseService.updateUserSettings(userId, {
+        [key]: value
+      });
+      if (updatedSettings) {
+        setSettings(updatedSettings);
+      }
+    } catch (error) {
+      console.error('Error updating setting:', error);
+      Alert.alert('Error', 'Failed to update setting');
+    }
+  };
 
   const renderThemeOption = (mode: 'light' | 'dark' | 'system', label: string, icon: string) => (
     <TouchableOpacity
@@ -84,13 +129,19 @@ const SettingsScreen: React.FC = () => {
             'Push Notifications',
             'Receive alerts for important events',
             'notifications',
-            <Switch value={true} />
+            <Switch 
+              value={settings?.notifications_enabled ?? true}
+              onValueChange={(value) => updateSetting('notifications_enabled', value)}
+            />
           )}
           {renderSettingItem(
             'Email Notifications',
             'Get email updates for system events',
             'mail',
-            <Switch value={false} />
+            <Switch 
+              value={settings?.email_notifications ?? false}
+              onValueChange={(value) => updateSetting('email_notifications', value)}
+            />
           )}
         </View>
 
@@ -102,13 +153,19 @@ const SettingsScreen: React.FC = () => {
             'Auto Sync',
             'Automatically sync data in background',
             'sync',
-            <Switch value={true} />
+            <Switch 
+              value={settings?.auto_sync ?? true}
+              onValueChange={(value) => updateSetting('auto_sync', value)}
+            />
           )}
           {renderSettingItem(
             'Offline Mode',
             'Cache data for offline access',
             'cloud-offline',
-            <Switch value={true} />
+            <Switch 
+              value={settings?.offline_mode ?? true}
+              onValueChange={(value) => updateSetting('offline_mode', value)}
+            />
           )}
         </View>
 
@@ -156,7 +213,10 @@ const SettingsScreen: React.FC = () => {
           )}
         </View>
 
-        <TouchableOpacity style={[styles.signOutButton, { backgroundColor: theme.colors.error }]}>
+        <TouchableOpacity 
+          style={[styles.signOutButton, { backgroundColor: theme.colors.error }]}
+          onPress={signOut}
+        >
           <Ionicons name="log-out" size={20} color="#FFFFFF" />
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>

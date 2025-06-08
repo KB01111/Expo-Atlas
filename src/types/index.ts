@@ -3,6 +3,9 @@ export interface User {
   email: string;
   full_name?: string;
   avatar_url?: string;
+  role?: string;
+  status?: 'active' | 'inactive' | 'pending';
+  last_active?: string;
   created_at: string;
   updated_at: string;
 }
@@ -107,6 +110,63 @@ export interface ChartData {
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
+
+export interface UserRole {
+  id: string;
+  user_id: string;
+  role: 'admin' | 'user' | 'viewer';
+  permissions: string[];
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'push' | 'email' | 'in_app';
+  title: string;
+  message: string;
+  read: boolean;
+  data?: any;
+  created_at: string;
+}
+
+export interface UserSettings {
+  id: string;
+  user_id: string;
+  theme_mode: ThemeMode;
+  notifications_enabled: boolean;
+  email_notifications: boolean;
+  auto_sync: boolean;
+  offline_mode: boolean;
+  biometric_lock: boolean;
+  language: string;
+  updated_at: string;
+}
+
+export interface WorkflowNode {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: any;
+}
+
+export interface WorkflowEdge {
+  id: string;
+  source: string;
+  target: string;
+  type?: string;
+}
+
+export interface Document {
+  id: string;
+  user_id: string;
+  name: string;
+  content: string;
+  type: string;
+  size: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface AppTheme {
   colors: {

@@ -1,15 +1,112 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, FlatList, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { createSharedStyles } from '../../styles/shared';
+import { Card, Modal } from '../../components/ui';
+import WorkflowBuilder from '../../components/workflow/WorkflowBuilder';
+import { supabaseService } from '../../services/supabase';
+import { Workflow, WorkflowNode, WorkflowEdge } from '../../types';
 
 const WorkflowsScreen: React.FC = () => {
   const { theme } = useTheme();
+  const sharedStyles = createSharedStyles(theme);
+  
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const loadWorkflows = async () => {
+    try {
+      const data = await supabaseService.getWorkflows();
+      setWorkflows(data);
+    } catch (error) {
+      console.error('Error loading workflows:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWorkflows();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadWorkflows();
+  };
 
   const openLangGraphOAP = () => {
     Linking.openURL('https://langgraph-oap.example.com');
   };
+
+  const handleCreateWorkflow = () => {
+    setSelectedWorkflow(null);
+    setShowBuilder(true);
+  };
+
+  const handleEditWorkflow = (workflow: Workflow) => {
+    setSelectedWorkflow(workflow);
+    setShowBuilder(true);
+  };
+
+  const handleSaveWorkflow = async (nodes: WorkflowNode[], edges: WorkflowEdge[]) => {
+    try {
+      const workflowData = {
+        name: selectedWorkflow?.name || 'New Workflow',
+        description: selectedWorkflow?.description || 'Created with workflow builder',
+        nodes,
+        edges
+      };
+
+      let result;
+      if (selectedWorkflow) {
+        result = await supabaseService.updateWorkflow(selectedWorkflow.id, workflowData);
+        if (result) {
+          setWorkflows(prev => prev.map(w => w.id === result.id ? result : w));
+        }
+      } else {
+        result = await supabaseService.createWorkflow(workflowData);
+        if (result) {
+          setWorkflows(prev => [...prev, result]);
+        }
+      }
+
+      setShowBuilder(false);
+    } catch (error) {
+      console.error('Error saving workflow:', error);
+    }
+  };
+
+  const renderWorkflow = ({ item }: { item: Workflow }) => (
+    <Card variant="default" onPress={() => handleEditWorkflow(item)}>
+      <View style={styles.workflowHeader}>
+        <View style={styles.workflowInfo}>
+          <Text style={[sharedStyles.subtitle]}>
+            {item.name}
+          </Text>
+          <Text style={[sharedStyles.body, { opacity: 0.7 }]}>
+            {item.description || 'No description'}
+          </Text>
+          <Text style={[sharedStyles.caption]}>
+            Created: {new Date(item.created_at).toLocaleDateString()}
+          </Text>
+        </View>
+        <View style={styles.workflowStats}>
+          <Text style={[sharedStyles.caption]}>
+            {item.nodes?.length || 0} nodes
+          </Text>
+          <Text style={[sharedStyles.caption]}>
+            {item.edges?.length || 0} connections
+          </Text>
+        </View>
+      </View>
+    </Card>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -24,35 +121,72 @@ const WorkflowsScreen: React.FC = () => {
       </LinearGradient>
 
       <View style={styles.content}>
-        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <Ionicons name="git-network" size={48} color={theme.colors.primary} />
-          <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-            Simplified Workflow Builder
-          </Text>
-          <Text style={[styles.cardDescription, { color: theme.colors.textSecondary }]}>
-            Create basic automation workflows with drag-and-drop interface
-          </Text>
-          <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]}>
-            <Text style={styles.buttonText}>Create Workflow</Text>
-          </TouchableOpacity>
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <Card variant="outline" onPress={handleCreateWorkflow}>
+            <View style={styles.quickActionContent}>
+              <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
+              <Text style={[sharedStyles.subtitle, { textAlign: 'center' }]}>
+                Create Workflow
+              </Text>
+              <Text style={[sharedStyles.caption, { textAlign: 'center' }]}>
+                Build with drag & drop
+              </Text>
+            </View>
+          </Card>
+
+          <Card variant="outline" onPress={openLangGraphOAP}>
+            <View style={styles.quickActionContent}>
+              <Ionicons name="desktop" size={32} color={theme.colors.secondary} />
+              <Text style={[sharedStyles.subtitle, { textAlign: 'center' }]}>
+                LangGraph OAP
+              </Text>
+              <Text style={[sharedStyles.caption, { textAlign: 'center' }]}>
+                Advanced editor
+              </Text>
+            </View>
+          </Card>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <Ionicons name="desktop" size={48} color={theme.colors.secondary} />
-          <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-            Advanced Workflow Editor
-          </Text>
-          <Text style={[styles.cardDescription, { color: theme.colors.textSecondary }]}>
-            Access the full LangGraph OAP for complex workflow development
-          </Text>
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: theme.colors.secondary }]}
-            onPress={openLangGraphOAP}
-          >
-            <Text style={styles.buttonText}>Open LangGraph OAP</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Workflows List */}
+        <Text style={[sharedStyles.title, { marginBottom: 16 }]}>
+          Your Workflows ({workflows.length})
+        </Text>
+
+        <FlatList
+          data={workflows}
+          renderItem={renderWorkflow}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.workflowsList}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={[sharedStyles.center, { paddingVertical: 40 }]}>
+              <Ionicons name="git-network" size={48} color={theme.colors.textSecondary} />
+              <Text style={[sharedStyles.body, { marginTop: 16, textAlign: 'center' }]}>
+                No workflows yet
+              </Text>
+              <Text style={[sharedStyles.caption, { textAlign: 'center' }]}>
+                Create your first workflow to get started
+              </Text>
+            </View>
+          }
+        />
       </View>
+
+      {/* Workflow Builder Modal */}
+      <Modal
+        visible={showBuilder}
+        onClose={() => setShowBuilder(false)}
+        title={selectedWorkflow ? 'Edit Workflow' : 'Create Workflow'}
+        size="fullscreen"
+      >
+        <WorkflowBuilder
+          onSave={handleSaveWorkflow}
+          initialNodes={selectedWorkflow?.nodes || []}
+          initialEdges={selectedWorkflow?.edges || []}
+        />
+      </Modal>
     </View>
   );
 };
@@ -79,33 +213,33 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
-    gap: 16,
   },
-  card: {
-    padding: 24,
-    borderRadius: 16,
+  quickActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  quickActionContent: {
     alignItems: 'center',
-    gap: 16,
+    gap: 8,
+    padding: 16,
   },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    textAlign: 'center',
+  workflowsList: {
+    gap: 12,
+    paddingBottom: 20,
   },
-  cardDescription: {
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 22,
+  workflowHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+  workflowInfo: {
+    flex: 1,
+    gap: 4,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  workflowStats: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
 });
 
