@@ -34,6 +34,9 @@
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ]
     },
@@ -47,6 +50,12 @@
       "eas": {
         "projectId": "6ca03950-5509-4afc-842b-06c983d4d159"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6ca03950-5509-4afc-842b-06c983d4d159"
     }
   }
 }

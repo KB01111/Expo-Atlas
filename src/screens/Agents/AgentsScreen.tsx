@@ -7,15 +7,21 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabaseService } from '../../services/supabase';
+import openAIAgentsService from '../../services/openaiAgentsSimple';
 import { Agent, AppTheme } from '../../types';
-import { Card, StatusBadge, AnimatedView, SearchBar } from '../../components/ui';
+import { OpenAIAgent, OpenAIAgentExecution } from '../../types/openai';
+import { Card, StatusBadge, AnimatedView, SearchBar, Button } from '../../components/ui';
 import { createSharedStyles } from '../../styles/shared';
 import AgentModal from '../../components/modals/AgentModal';
+import OpenAIAgentModal from '../../components/openai/OpenAIAgentModal';
+import OpenAIExecutionModal from '../../components/openai/OpenAIExecutionModal';
+import OpenAIConfigModal from '../../components/openai/OpenAIConfigModal';
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   listContainer: {
@@ -105,16 +111,26 @@ const AgentsScreen: React.FC = () => {
   const sharedStyles = createSharedStyles(theme);
   const styles = createStyles(theme);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [openAIAgents, setOpenAIAgents] = useState<OpenAIAgent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showOpenAIModal, setShowOpenAIModal] = useState(false);
+  const [showExecutionModal, setShowExecutionModal] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [selectedOpenAIAgent, setSelectedOpenAIAgent] = useState<OpenAIAgent | null>(null);
+  const [agentType, setAgentType] = useState<'standard' | 'openai'>('standard');
 
   const loadAgents = async () => {
     try {
-      const data = await supabaseService.getAgents();
-      setAgents(data);
+      const [standardAgents, openAIAgentsList] = await Promise.all([
+        supabaseService.getAgents(),
+        openAIAgentsService.listAgents()
+      ]);
+      setAgents(standardAgents);
+      setOpenAIAgents(openAIAgentsList);
     } catch (error) {
       console.error('Error loading agents:', error);
     } finally {
@@ -137,9 +153,95 @@ const AgentsScreen: React.FC = () => {
     (agent.description && agent.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
+  const filteredOpenAIAgents = openAIAgents.filter(agent =>
+    agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (agent.description && agent.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const allFilteredAgents = agentType === 'standard' ? filteredAgents : filteredOpenAIAgents;
+
   const handleCreateAgent = () => {
     setSelectedAgent(null);
     setShowModal(true);
+  };
+
+  const handleCreateOpenAIAgent = () => {
+    if (!openAIAgentsService.isConfigured()) {
+      setShowConfigModal(true);
+      return;
+    }
+    setSelectedOpenAIAgent(null);
+    setShowOpenAIModal(true);
+  };
+
+  const handleEditOpenAIAgent = (agent: OpenAIAgent) => {
+    setSelectedOpenAIAgent(agent);
+    setShowOpenAIModal(true);
+  };
+
+  const handleExecuteOpenAIAgent = (agent: OpenAIAgent) => {
+    setSelectedOpenAIAgent(agent);
+    setShowExecutionModal(true);
+  };
+
+  const handleSaveOpenAIAgent = async (agent: OpenAIAgent) => {
+    try {
+      if (selectedOpenAIAgent) {
+        // Update existing agent
+        const updatedAgent = await openAIAgentsService.updateAgent(agent.id, {
+          name: agent.name,
+          description: agent.description,
+          model: agent.model,
+          instructions: agent.instructions,
+          tools: agent.tools,
+          metadata: agent.metadata
+        });
+        setOpenAIAgents(prev => prev.map(a => a.id === updatedAgent.id ? updatedAgent : a));
+      } else {
+        // Create new agent
+        const newAgent = await openAIAgentsService.createAgent({
+          name: agent.name,
+          description: agent.description,
+          model: agent.model,
+          instructions: agent.instructions,
+          tools: agent.tools,
+          metadata: agent.metadata
+        });
+        setOpenAIAgents(prev => [...prev, newAgent]);
+      }
+    } catch (error) {
+      console.error('Error saving OpenAI agent:', error);
+      Alert.alert('Error', 'Failed to save OpenAI agent. Please try again.');
+    }
+  };
+
+  const handleDeleteOpenAIAgent = async (agent: OpenAIAgent) => {
+    Alert.alert(
+      'Delete Agent',
+      `Are you sure you want to delete "${agent.name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await openAIAgentsService.deleteAgent(agent.id);
+            if (success) {
+              setOpenAIAgents(prev => prev.filter(a => a.id !== agent.id));
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleExecutionComplete = (execution: OpenAIAgentExecution) => {
+    // Update agent execution count
+    setOpenAIAgents(prev => prev.map(agent => 
+      agent.id === execution.agentId 
+        ? { ...agent, executions: agent.executions + 1 }
+        : agent
+    ));
   };
 
   const handleEditAgent = (agent: Agent) => {
@@ -215,6 +317,58 @@ const AgentsScreen: React.FC = () => {
     </AnimatedView>
   );
 
+  const renderOpenAIAgent = ({ item, index }: { item: OpenAIAgent; index: number }) => (
+    <AnimatedView animation="slideUp" delay={index * 50}>
+      <Card 
+        variant="elevated" 
+        size="md" 
+        pressable
+        onPress={() => handleEditOpenAIAgent(item)}
+        style={styles.agentCard}
+      >
+        <View style={styles.agentHeader}>
+          <View style={styles.agentInfo}>
+            <View style={styles.agentTitleRow}>
+              <Ionicons name="hardware-chip" size={20} color="#00A67E" />
+              <Text style={styles.agentName}>{item.name}</Text>
+              <StatusBadge status={item.status} variant="subtle" />
+            </View>
+            <Text style={styles.agentDescription}>
+              {item.description || 'No description available'}
+            </Text>
+            <Text style={styles.agentProvider}>
+              OpenAI Agents • {item.model}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.agentStats}>
+          <View style={styles.statItem}>
+            <Ionicons name="hammer" size={16} color={theme.colors.secondary} />
+            <Text style={[styles.statValue, { color: theme.colors.secondary }]}>
+              {item.tools.length}
+            </Text>
+            <Text style={styles.statLabel}>Tools</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Ionicons name="flash" size={16} color={theme.colors.primary} />
+            <Text style={[styles.statValue, { color: theme.colors.primary }]}>
+              {item.executions}
+            </Text>
+            <Text style={styles.statLabel}>Executions</Text>
+          </View>
+
+          <View style={styles.statItem}>
+            <TouchableOpacity onPress={() => handleExecuteOpenAIAgent(item)}>
+              <Button title="Execute" variant="minimal" size="xs" onPress={() => {}} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Card>
+    </AnimatedView>
+  );
+
   if (loading) {
     return (
       <View style={[sharedStyles.container, sharedStyles.center]}>
@@ -238,16 +392,38 @@ const AgentsScreen: React.FC = () => {
       </LinearGradient>
 
       <View style={sharedStyles.contentSpaced}>
+        {/* Agent Type Toggle */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+          <Button
+            title={`Standard Agents (${agents.length})`}
+            variant={agentType === 'standard' ? 'primary' : 'outline'}
+            size="sm"
+            onPress={() => setAgentType('standard')}
+            style={{ flex: 1 }}
+          />
+          <Button
+            title={`OpenAI Agents (${openAIAgents.length})`}
+            variant={agentType === 'openai' ? 'primary' : 'outline'}
+            size="sm"
+            onPress={() => setAgentType('openai')}
+            style={{ flex: 1 }}
+          />
+        </View>
+
         <SearchBar
-          placeholder="Search agents..."
+          placeholder={`Search ${agentType} agents...`}
           onSearch={setSearchQuery}
           value={searchQuery}
         />
 
-        {filteredAgents.length > 0 ? (
+        {allFilteredAgents.length > 0 ? (
           <FlatList
-            data={filteredAgents}
-            renderItem={renderAgent}
+            data={allFilteredAgents}
+            renderItem={({ item, index }) => 
+              agentType === 'standard' 
+                ? renderAgent({ item: item as Agent, index })
+                : renderOpenAIAgent({ item: item as OpenAIAgent, index })
+            }
             keyExtractor={item => item.id}
             contentContainerStyle={styles.listContainer}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -255,24 +431,66 @@ const AgentsScreen: React.FC = () => {
           />
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="robot" size={64} color={theme.colors.textSecondary} />
-            <Text style={styles.emptyTitle}>No agents found</Text>
+            <Ionicons 
+              name={agentType === 'openai' ? 'hardware-chip' : 'desktop'} 
+              size={64} 
+              color={theme.colors.textSecondary} 
+            />
+            <Text style={styles.emptyTitle}>
+              No {agentType} agents found
+            </Text>
             <Text style={styles.emptySubtitle}>
-              {searchQuery ? 'Try adjusting your search' : 'Create your first AI agent'}
+              {searchQuery 
+                ? 'Try adjusting your search' 
+                : `Create your first ${agentType} agent`
+              }
             </Text>
           </View>
         )}
 
-        <TouchableOpacity style={sharedStyles.fab} onPress={handleCreateAgent}>
+        <TouchableOpacity 
+          style={sharedStyles.fab} 
+          onPress={agentType === 'standard' ? handleCreateAgent : handleCreateOpenAIAgent}
+        >
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
+      {/* Standard Agent Modal */}
       <AgentModal
         visible={showModal}
         onClose={() => setShowModal(false)}
         onSave={handleSaveAgent}
         agent={selectedAgent}
+      />
+
+      {/* OpenAI Agent Modal */}
+      <OpenAIAgentModal
+        visible={showOpenAIModal}
+        onClose={() => setShowOpenAIModal(false)}
+        onSave={handleSaveOpenAIAgent}
+        agent={selectedOpenAIAgent}
+        isEditing={!!selectedOpenAIAgent}
+      />
+
+      {/* OpenAI Execution Modal */}
+      {selectedOpenAIAgent && (
+        <OpenAIExecutionModal
+          visible={showExecutionModal}
+          onClose={() => setShowExecutionModal(false)}
+          agent={selectedOpenAIAgent}
+          onExecutionComplete={handleExecutionComplete}
+        />
+      )}
+
+      {/* OpenAI Configuration Modal */}
+      <OpenAIConfigModal
+        visible={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        onConfigured={() => {
+          setShowConfigModal(false);
+          setShowOpenAIModal(true);
+        }}
       />
     </View>
   );

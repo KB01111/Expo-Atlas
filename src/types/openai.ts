@@ -1,0 +1,215 @@
+// OpenAI Agents SDK Types and Interfaces
+
+export interface OpenAIAgentTool {
+  type: 'function' | 'code_interpreter' | 'file_search';
+  function?: {
+    name: string;
+    description: string;
+    parameters: Record<string, any>;
+  };
+}
+
+export interface OpenAIAgentConfig {
+  name: string;
+  description?: string;
+  model?: string;
+  instructions: string;
+  tools?: OpenAIAgentTool[];
+  metadata?: Record<string, any>;
+  temperature?: number;
+  top_p?: number;
+  max_tokens?: number;
+}
+
+export interface OpenAIAgent {
+  id: string;
+  name: string;
+  description?: string;
+  model: string;
+  instructions: string;
+  tools: OpenAIAgentTool[];
+  metadata: Record<string, any>;
+  status: 'active' | 'inactive' | 'error';
+  created_at: string;
+  updated_at: string;
+  provider: 'openai-agents';
+  executions: number;
+  successRate: number;
+  temperature?: number;
+  top_p?: number;
+  max_tokens?: number;
+}
+
+export interface OpenAIAgentMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  tool_calls?: OpenAIToolCall[];
+  metadata?: Record<string, any>;
+}
+
+export interface OpenAIToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+export interface OpenAIAgentExecution {
+  id: string;
+  agentId: string;
+  input: string;
+  output: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  startTime: string;
+  endTime: string | null;
+  tokensUsed: number;
+  cost: number;
+  messages: OpenAIAgentMessage[];
+  metadata: Record<string, any>;
+  error?: string;
+  duration?: number;
+}
+
+export interface OpenAIStreamingEvent {
+  type: 'message' | 'tool_call' | 'completion' | 'error';
+  data: any;
+  timestamp: string;
+}
+
+export interface OpenAIAgentRunOptions {
+  messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
+  stream?: boolean;
+  tools?: OpenAIAgentTool[];
+  metadata?: Record<string, any>;
+  temperature?: number;
+  max_tokens?: number;
+}
+
+export interface OpenAIAgentStats {
+  totalExecutions: number;
+  successfulExecutions: number;
+  failedExecutions: number;
+  averageTokensUsed: number;
+  totalCost: number;
+  averageResponseTime: number;
+  lastExecuted: string | null;
+}
+
+export interface OpenAIAgentPerformance {
+  agentId: string;
+  date: string;
+  executions: number;
+  successRate: number;
+  averageTokens: number;
+  totalCost: number;
+  averageResponseTime: number;
+}
+
+export interface OpenAIAgentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'assistant' | 'analyst' | 'writer' | 'coder' | 'researcher' | 'other';
+  instructions: string;
+  tools: OpenAIAgentTool[];
+  model: string;
+  tags: string[];
+  isPublic: boolean;
+  created_by: string;
+  created_at: string;
+  usage_count: number;
+}
+
+export interface OpenAIAgentConversation {
+  id: string;
+  agentId: string;
+  title: string;
+  messages: OpenAIAgentMessage[];
+  created_at: string;
+  updated_at: string;
+  status: 'active' | 'archived' | 'deleted';
+  metadata: Record<string, any>;
+}
+
+export interface OpenAIAgentWorkflow {
+  id: string;
+  name: string;
+  description: string;
+  agents: Array<{
+    agentId: string;
+    order: number;
+    conditions?: Record<string, any>;
+  }>;
+  triggers: Array<{
+    type: 'manual' | 'scheduled' | 'webhook' | 'event';
+    config: Record<string, any>;
+  }>;
+  created_at: string;
+  updated_at: string;
+  status: 'active' | 'inactive';
+}
+
+export interface OpenAIAPIConfig {
+  apiKey: string;
+  organization?: string;
+  project?: string;
+  baseURL?: string;
+  timeout?: number;
+  maxRetries?: number;
+}
+
+export interface OpenAIAgentError {
+  code: string;
+  message: string;
+  type: 'api_error' | 'rate_limit' | 'invalid_request' | 'authentication' | 'permission' | 'server_error';
+  details?: Record<string, any>;
+}
+
+export interface OpenAIAgentUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  cost: number;
+  model: string;
+  timestamp: string;
+}
+
+export interface OpenAIAgentCapability {
+  name: string;
+  description: string;
+  enabled: boolean;
+  config?: Record<string, any>;
+}
+
+export interface OpenAIAgentContext {
+  sessionId?: string;
+  userId?: string;
+  conversationHistory?: OpenAIAgentMessage[];
+  variables?: Record<string, any>;
+  metadata?: Record<string, any>;
+}
+
+// Event types for real-time communication
+export type OpenAIAgentEventType = 
+  | 'agent.created'
+  | 'agent.updated'
+  | 'agent.deleted'
+  | 'execution.started'
+  | 'execution.completed'
+  | 'execution.failed'
+  | 'execution.cancelled'
+  | 'message.received'
+  | 'tool.called'
+  | 'error.occurred';
+
+export interface OpenAIAgentEvent {
+  type: OpenAIAgentEventType;
+  agentId: string;
+  executionId?: string;
+  data: any;
+  timestamp: string;
+}

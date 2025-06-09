@@ -40,6 +40,7 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 **Key Dependencies:**
 - Authentication: `@clerk/clerk-expo` with Google OAuth
 - Database: `@supabase/supabase-js`
+- OpenAI Agents: `@openai/agents` for AI agent creation and execution
 - Navigation: `@react-navigation/*` (stack, bottom-tabs, drawer)
 - Charts: `react-native-chart-kit`, `victory-native`
 - UI: `@expo/vector-icons`, `react-native-vector-icons`
@@ -48,12 +49,24 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk authentication
 - `EXPO_PUBLIC_SUPABASE_URL` - Supabase project URL  
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `EXPO_PUBLIC_OPENAI_API_KEY` - OpenAI API key for OpenAI Agents SDK
+- `EXPO_PUBLIC_OPENAI_ORGANIZATION` - OpenAI organization ID (optional)
 
 **Component Architecture:**
 - Screen organization under `src/screens/` with domain-based structure
 - Reusable UI components in `src/components/ui/` with consistent API
+- OpenAI integration in `src/components/openai/` with agent management
 - Shared styling system in `src/styles/shared.ts` for consistency
 - Animated components with built-in micro-interactions
+
+**OpenAI Agents Integration:**
+- Full support for OpenAI Agents SDK with agent creation, execution, and monitoring
+- Service layer at `src/services/openaiAgents.ts` for all OpenAI operations
+- Complete type definitions in `src/types/openai.ts` for type safety
+- UI components for agent management, execution, and configuration
+- Template-based agent creation with predefined roles (assistant, coder, researcher, analyst)
+- Real-time execution with streaming support and cost tracking
+- Tool integration including code interpreter, file search, and custom functions
 
 **Development Guidelines:**
 - Use shared theme system for all styling decisions
