@@ -12,14 +12,98 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabaseService } from '../../services/supabase';
-import { Agent } from '../../types';
+import { Agent, AppTheme } from '../../types';
 import { Card, StatusBadge, AnimatedView, SearchBar } from '../../components/ui';
 import { createSharedStyles } from '../../styles/shared';
 import AgentModal from '../../components/modals/AgentModal';
 
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  listContainer: {
+    gap: 16,
+    paddingBottom: 100,
+  },
+  agentCard: {
+    marginBottom: 0,
+  },
+  agentHeader: {
+    marginBottom: 12,
+  },
+  agentInfo: {
+    flex: 1,
+  },
+  agentTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  agentName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.text,
+    flex: 1,
+  },
+  agentDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: theme.colors.textSecondary,
+    marginBottom: 6,
+  },
+  agentProvider: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  agentStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+});
+
 const AgentsScreen: React.FC = () => {
   const { theme } = useTheme();
   const sharedStyles = createSharedStyles(theme);
+  const styles = createStyles(theme);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -78,89 +162,106 @@ const AgentsScreen: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return theme.colors.success;
-      case 'inactive':
-        return theme.colors.textSecondary;
-      case 'error':
-        return theme.colors.error;
-      default:
-        return theme.colors.textSecondary;
-    }
-  };
-
   const renderAgent = ({ item, index }: { item: Agent; index: number }) => (
-    <AnimatedView animation="slideUp" delay={index * 100}>
-      <Card variant="default" onPress={() => console.log('Agent pressed:', item.id)}>
-        <View style={sharedStyles.rowBetween}>
-          <View style={{ flex: 1 }}>
-            <Text style={sharedStyles.subtitle}>
-              {item.name}
-            </Text>
-            <Text style={sharedStyles.caption}>
+    <AnimatedView animation="slideUp" delay={index * 50}>
+      <Card 
+        variant="elevated" 
+        size="md" 
+        pressable
+        onPress={() => handleEditAgent(item)}
+        style={styles.agentCard}
+      >
+        <View style={styles.agentHeader}>
+          <View style={styles.agentInfo}>
+            <View style={styles.agentTitleRow}>
+              <Text style={styles.agentName}>{item.name}</Text>
+              <StatusBadge status={item.status} variant="subtle" />
+            </View>
+            <Text style={styles.agentDescription}>
               {item.description || 'No description available'}
             </Text>
+            <Text style={styles.agentProvider}>
+              {item.provider} • {item.model}
+            </Text>
           </View>
-          <StatusBadge status={item.status} variant="subtle" />
         </View>
 
-        <View style={[sharedStyles.row, sharedStyles.gapLG, { marginTop: theme.spacing.md }]}>
-          <View style={sharedStyles.center}>
-            <Text style={[sharedStyles.title, { color: theme.colors.primary, fontSize: 20 }]}>
+        <View style={styles.agentStats}>
+          <View style={styles.statItem}>
+            <Ionicons name="list" size={16} color={theme.colors.primary} />
+            <Text style={[styles.statValue, { color: theme.colors.primary }]}>
               {item.tasks || 0}
             </Text>
-            <Text style={sharedStyles.label}>
-              Tasks
-            </Text>
+            <Text style={styles.statLabel}>Tasks</Text>
           </View>
-          <View style={sharedStyles.center}>
-            <Text style={[sharedStyles.title, { color: theme.colors.success, fontSize: 20 }]}>
+          
+          <View style={styles.statItem}>
+            <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
+            <Text style={[styles.statValue, { color: theme.colors.success }]}>
               {(item.successRate || 0).toFixed(1)}%
             </Text>
-            <Text style={sharedStyles.label}>
-              Success Rate
-            </Text>
+            <Text style={styles.statLabel}>Success</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => handleEditAgent(item)}
-          >
-            <Ionicons name="ellipsis-horizontal" size={20} color={theme.colors.textSecondary} />
-          </TouchableOpacity>
+
+          <View style={styles.statItem}>
+            <Ionicons name="time" size={16} color={theme.colors.info} />
+            <Text style={[styles.statValue, { color: theme.colors.info }]}>
+              {new Date(item.updated_at).toLocaleDateString()}
+            </Text>
+            <Text style={styles.statLabel}>Updated</Text>
+          </View>
         </View>
       </Card>
     </AnimatedView>
   );
 
+  if (loading) {
+    return (
+      <View style={[sharedStyles.container, sharedStyles.center]}>
+        <Text style={[sharedStyles.body, { textAlign: 'center', color: theme.colors.text }]}>
+          Loading agents...
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={sharedStyles.container}>
       <LinearGradient
         colors={theme.gradients.primary}
-        style={styles.header}
+        style={sharedStyles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
-        <Text style={styles.headerTitle}>Agents</Text>
-        <Text style={styles.headerSubtitle}>Manage your AI agents</Text>
+        <Text style={sharedStyles.headerTitle}>Agents</Text>
+        <Text style={sharedStyles.headerSubtitle}>Manage your AI agents</Text>
       </LinearGradient>
 
-      <View style={sharedStyles.content}>
+      <View style={sharedStyles.contentSpaced}>
         <SearchBar
           placeholder="Search agents..."
           onSearch={setSearchQuery}
           value={searchQuery}
         />
 
-        <FlatList
-          data={filteredAgents}
-          renderItem={renderAgent}
-          keyExtractor={item => item.id}
-          contentContainerStyle={sharedStyles.gapMD}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          showsVerticalScrollIndicator={false}
-        />
+        {filteredAgents.length > 0 ? (
+          <FlatList
+            data={filteredAgents}
+            renderItem={renderAgent}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <View style={styles.emptyState}>
+            <Ionicons name="robot" size={64} color={theme.colors.textSecondary} />
+            <Text style={styles.emptyTitle}>No agents found</Text>
+            <Text style={styles.emptySubtitle}>
+              {searchQuery ? 'Try adjusting your search' : 'Create your first AI agent'}
+            </Text>
+          </View>
+        )}
 
         <TouchableOpacity style={sharedStyles.fab} onPress={handleCreateAgent}>
           <Ionicons name="add" size={24} color="#FFFFFF" />
@@ -176,114 +277,5 @@ const AgentsScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    padding: 24,
-    paddingTop: 60,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#F1F5F9',
-    opacity: 0.9,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-  },
-  list: {
-    gap: 12,
-    paddingBottom: 80,
-  },
-  agentCard: {
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  agentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  agentInfo: {
-    flex: 1,
-  },
-  agentName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  agentDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '500',
-    textTransform: 'capitalize',
-  },
-  agentStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 24,
-  },
-  stat: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  statLabel: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  actionButton: {
-    marginLeft: 'auto',
-    padding: 8,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-});
 
 export default AgentsScreen;

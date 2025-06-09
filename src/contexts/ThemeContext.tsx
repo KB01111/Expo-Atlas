@@ -11,40 +11,45 @@ interface ThemeContextType {
 
 const lightTheme: AppTheme = {
   colors: {
-    primary: '#6366F1', // Indigo-500 - Modern and vibrant
-    secondary: '#EC4899', // Pink-500 - Complementary accent
-    background: '#FAFBFC', // Slightly warmer white
-    surface: '#FFFFFF', // Pure white for cards
-    text: '#111827', // Gray-900 - Better contrast
-    textSecondary: '#6B7280', // Gray-500 - Softer secondary text
-    border: '#E5E7EB', // Gray-200 - Subtle borders
-    error: '#EF4444', // Red-500
-    success: '#10B981', // Emerald-500
-    warning: '#F59E0B', // Amber-500
-    accent: '#8B5CF6', // Violet-500
-    info: '#3B82F6', // Blue-500
-    surfaceHover: '#F9FAFB', // Gray-50
-    overlay: 'rgba(0, 0, 0, 0.5)',
+    primary: '#4F46E5', // Indigo-600 - Premium brand color
+    secondary: '#06B6D4', // Cyan-500 - Fresh modern accent
+    background: '#FFFFFF', // Pure white for premium feel
+    surface: '#FFFFFF', // Clean white surfaces
+    text: '#0F172A', // Slate-900 - Deep readable text
+    textSecondary: '#64748B', // Slate-500 - Professional gray
+    border: '#F1F5F9', // Slate-100 - Ultra-subtle borders
+    error: '#DC2626', // Red-600 - Professional error
+    success: '#059669', // Emerald-600 - Rich success green
+    warning: '#D97706', // Amber-600 - Warm warning
+    accent: '#7C3AED', // Violet-600 - Elegant purple
+    info: '#0284C7', // Sky-600 - Professional blue
+    surfaceHover: '#F8FAFC', // Slate-50 - Subtle hover
+    overlay: 'rgba(15, 23, 42, 0.6)', // Sophisticated overlay
   },
   gradients: {
-    primary: ['#6366F1', '#8B5CF6', '#EC4899'] as const,
-    hero: ['#667EEA', '#764BA2', '#F093FB'] as const,
-    card: ['#FFFFFF', '#F8FAFC'] as const,
-    subtle: ['#F9FAFB', '#FFFFFF'] as const,
+    primary: ['#4F46E5', '#7C3AED', '#06B6D4'] as const,
+    hero: ['#4F46E5', '#7C3AED', '#06B6D4'] as const,
+    card: ['#FFFFFF', '#FFFFFF'] as const,
+    subtle: ['#F8FAFC', '#FFFFFF'] as const,
+    accent: ['#06B6D4', '#4F46E5'] as const,
+    warm: ['#F59E0B', '#EF4444'] as const,
   },
   spacing: {
     xs: 4,
     sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 48,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    xxl: 32,
+    xxxl: 48,
   },
   borderRadius: {
+    xs: 2,
     sm: 4,
-    md: 8,
-    lg: 12,
-    xl: 16,
+    md: 6,
+    lg: 8,
+    xl: 12,
+    xxl: 16,
     full: 9999,
   },
   shadows: {
@@ -81,40 +86,45 @@ const lightTheme: AppTheme = {
 
 const darkTheme: AppTheme = {
   colors: {
-    primary: '#818CF8', // Indigo-400 - Lighter for dark mode
-    secondary: '#F472B6', // Pink-400 - Lighter pink accent
-    background: '#0B1426', // Deep navy - More sophisticated than pure black
-    surface: '#1E293B', // Slate-800 - Rich card background
-    text: '#F8FAFC', // Slate-50 - Clean white text
-    textSecondary: '#94A3B8', // Slate-400 - Muted secondary
-    border: '#334155', // Slate-700 - Subtle borders
-    error: '#F87171', // Red-400
-    success: '#34D399', // Emerald-400
-    warning: '#FBBF24', // Amber-400
-    accent: '#A78BFA', // Violet-400
-    info: '#60A5FA', // Blue-400
-    surfaceHover: '#334155', // Slate-700
-    overlay: 'rgba(0, 0, 0, 0.7)',
+    primary: '#6366F1', // Indigo-500 - Vibrant but professional
+    secondary: '#22D3EE', // Cyan-400 - Bright modern accent
+    background: '#0F172A', // Slate-900 - Rich deep background
+    surface: '#1E293B', // Slate-800 - Elevated surfaces
+    text: '#F8FAFC', // Slate-50 - Crisp white text
+    textSecondary: '#94A3B8', // Slate-400 - Balanced secondary
+    border: '#334155', // Slate-700 - Defined borders
+    error: '#EF4444', // Red-500 - Clear error indication
+    success: '#10B981', // Emerald-500 - Vibrant success
+    warning: '#F59E0B', // Amber-500 - Clear warning
+    accent: '#8B5CF6', // Violet-500 - Rich purple accent
+    info: '#3B82F6', // Blue-500 - Professional info
+    surfaceHover: '#334155', // Slate-700 - Interactive feedback
+    overlay: 'rgba(15, 23, 42, 0.8)', // Deep sophisticated overlay
   },
   gradients: {
-    primary: ['#818CF8', '#A78BFA', '#F472B6'] as const,
-    hero: ['#667EEA', '#764BA2', '#F093FB'] as const,
+    primary: ['#6366F1', '#8B5CF6', '#22D3EE'] as const,
+    hero: ['#6366F1', '#8B5CF6', '#22D3EE'] as const,
     card: ['#1E293B', '#334155'] as const,
     subtle: ['#0F172A', '#1E293B'] as const,
+    accent: ['#22D3EE', '#6366F1'] as const,
+    warm: ['#F59E0B', '#EF4444'] as const,
   },
   spacing: {
     xs: 4,
     sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 48,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    xxl: 32,
+    xxxl: 48,
   },
   borderRadius: {
+    xs: 2,
     sm: 4,
-    md: 8,
-    lg: 12,
-    xl: 16,
+    md: 6,
+    lg: 8,
+    xl: 12,
+    xxl: 16,
     full: 9999,
   },
   shadows: {

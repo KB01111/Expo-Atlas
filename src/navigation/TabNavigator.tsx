@@ -56,23 +56,70 @@ const TabNavigator: React.FC = () => {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
+          borderTopWidth: 1,
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 88,
+          ...theme.shadows.sm,
         },
         headerStyle: {
           backgroundColor: theme.colors.background,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.colors.border,
+          ...theme.shadows.sm,
         },
         headerTintColor: theme.colors.text,
+        headerTitleStyle: {
+          fontSize: 18,
+          fontWeight: '600',
+          letterSpacing: 0.3,
+        },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 11,
+          fontWeight: '500',
+          letterSpacing: 0.2,
+          marginTop: 4,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Agents" component={AgentsScreen} />
-      <Tab.Screen name="Workflows" component={WorkflowsScreen} />
-      <Tab.Screen name="Analytics" component={AnalyticsScreen} />
-      <Tab.Screen name="Financial" component={FinancialScreen} />
-      <Tab.Screen name="Users" component={UsersScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen 
+        name="Agents" 
+        component={AgentsScreen} 
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen 
+        name="Workflows" 
+        component={WorkflowsScreen} 
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen 
+        name="Analytics" 
+        component={AnalyticsScreen} 
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen 
+        name="Financial" 
+        component={FinancialScreen} 
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen 
+        name="Users" 
+        component={UsersScreen} 
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen 
+        name="Settings" 
+        component={SettingsScreen} 
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
   );
 };

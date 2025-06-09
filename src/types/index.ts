@@ -190,6 +190,8 @@ export interface AppTheme {
     hero: readonly [string, string, ...string[]];
     card: readonly [string, string, ...string[]];
     subtle: readonly [string, string, ...string[]];
+    accent: readonly [string, string, ...string[]];
+    warm: readonly [string, string, ...string[]];
   };
   spacing: {
     xs: number;
@@ -198,12 +200,15 @@ export interface AppTheme {
     lg: number;
     xl: number;
     xxl: number;
+    xxxl: number;
   };
   borderRadius: {
+    xs: number;
     sm: number;
     md: number;
     lg: number;
     xl: number;
+    xxl: number;
     full: number;
   };
   shadows: {
@@ -211,5 +216,31 @@ export interface AppTheme {
     md: any;
     lg: any;
     xl: any;
+  };
+}
+
+export interface Typography {
+  fontSizes: {
+    xs: number;
+    sm: number;
+    base: number;
+    lg: number;
+    xl: number;
+    '2xl': number;
+    '3xl': number;
+    '4xl': number;
+  };
+  fontWeights: {
+    normal: '400';
+    medium: '500';
+    semibold: '600';
+    bold: '700';
+    extrabold: '800';
+  };
+  lineHeights: {
+    tight: number;
+    snug: number;
+    normal: number;
+    relaxed: number;
   };
 }

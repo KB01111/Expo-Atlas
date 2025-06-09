@@ -4,14 +4,125 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { createSharedStyles } from '../../styles/shared';
-import { Card, Modal } from '../../components/ui';
+import { Card, Modal, AnimatedView } from '../../components/ui';
 import WorkflowBuilder from '../../components/workflow/WorkflowBuilder';
 import { supabaseService } from '../../services/supabase';
-import { Workflow, WorkflowNode, WorkflowEdge } from '../../types';
+import { Workflow, WorkflowNode, WorkflowEdge, AppTheme } from '../../types';
+
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  quickActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 24,
+  },
+  quickActionCard: {
+    flex: 1,
+  },
+  quickActionContent: {
+    alignItems: 'center',
+    gap: 12,
+    padding: 20,
+  },
+  quickActionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+  quickActionSubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 16,
+    letterSpacing: -0.3,
+  },
+  workflowsList: {
+    gap: 16,
+    paddingBottom: 100,
+  },
+  workflowHeader: {
+    marginBottom: 12,
+  },
+  workflowInfo: {
+    flex: 1,
+  },
+  workflowTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  workflowName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.text,
+    flex: 1,
+  },
+  workflowDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: theme.colors.textSecondary,
+    marginBottom: 6,
+  },
+  workflowDate: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  workflowStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+});
 
 const WorkflowsScreen: React.FC = () => {
   const { theme } = useTheme();
   const sharedStyles = createSharedStyles(theme);
+  const styles = createStyles(theme);
   
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [showBuilder, setShowBuilder] = useState(false);
@@ -82,76 +193,105 @@ const WorkflowsScreen: React.FC = () => {
     }
   };
 
-  const renderWorkflow = ({ item }: { item: Workflow }) => (
-    <Card variant="default" onPress={() => handleEditWorkflow(item)}>
-      <View style={styles.workflowHeader}>
-        <View style={styles.workflowInfo}>
-          <Text style={[sharedStyles.subtitle]}>
-            {item.name}
-          </Text>
-          <Text style={[sharedStyles.body, { opacity: 0.7 }]}>
-            {item.description || 'No description'}
-          </Text>
-          <Text style={[sharedStyles.caption]}>
-            Created: {new Date(item.created_at).toLocaleDateString()}
-          </Text>
+  const renderWorkflow = ({ item, index }: { item: Workflow; index: number }) => (
+    <AnimatedView animation="slideUp" delay={index * 100}>
+      <Card variant="elevated" size="md" pressable onPress={() => handleEditWorkflow(item)}>
+        <View style={styles.workflowHeader}>
+          <View style={styles.workflowInfo}>
+            <View style={styles.workflowTitleRow}>
+              <Ionicons name="git-network" size={20} color={theme.colors.primary} />
+              <Text style={styles.workflowName}>{item.name}</Text>
+            </View>
+            <Text style={styles.workflowDescription}>
+              {item.description || 'No description'}
+            </Text>
+            <Text style={styles.workflowDate}>
+              Created {new Date(item.created_at).toLocaleDateString()}
+            </Text>
+          </View>
         </View>
+        
         <View style={styles.workflowStats}>
-          <Text style={[sharedStyles.caption]}>
-            {item.nodes?.length || 0} nodes
-          </Text>
-          <Text style={[sharedStyles.caption]}>
-            {item.edges?.length || 0} connections
-          </Text>
+          <View style={styles.statItem}>
+            <Ionicons name="layers" size={16} color={theme.colors.info} />
+            <Text style={[styles.statValue, { color: theme.colors.info }]}>
+              {item.nodes?.length || 0}
+            </Text>
+            <Text style={styles.statLabel}>Nodes</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Ionicons name="git-network" size={16} color={theme.colors.secondary} />
+            <Text style={[styles.statValue, { color: theme.colors.secondary }]}>
+              {item.edges?.length || 0}
+            </Text>
+            <Text style={styles.statLabel}>Connections</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Ionicons name="time" size={16} color={theme.colors.accent} />
+            <Text style={[styles.statValue, { color: theme.colors.accent }]}>
+              {new Date(item.updated_at).toLocaleDateString()}
+            </Text>
+            <Text style={styles.statLabel}>Updated</Text>
+          </View>
         </View>
-      </View>
-    </Card>
+      </Card>
+    </AnimatedView>
   );
 
+  if (loading) {
+    return (
+      <View style={[sharedStyles.container, sharedStyles.center]}>
+        <Text style={[sharedStyles.body, { textAlign: 'center', color: theme.colors.text }]}>
+          Loading workflows...
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={sharedStyles.container}>
       <LinearGradient
         colors={theme.gradients.primary}
-        style={styles.header}
+        style={sharedStyles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
-        <Text style={styles.headerTitle}>Workflows</Text>
-        <Text style={styles.headerSubtitle}>Automation workflows</Text>
+        <Text style={sharedStyles.headerTitle}>Workflows</Text>
+        <Text style={sharedStyles.headerSubtitle}>Automation workflows</Text>
       </LinearGradient>
 
-      <View style={styles.content}>
+      <View style={sharedStyles.contentSpaced}>
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <Card variant="outline" onPress={handleCreateWorkflow}>
-            <View style={styles.quickActionContent}>
-              <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
-              <Text style={[sharedStyles.subtitle, { textAlign: 'center' }]}>
-                Create Workflow
-              </Text>
-              <Text style={[sharedStyles.caption, { textAlign: 'center' }]}>
-                Build with drag & drop
-              </Text>
-            </View>
-          </Card>
+          <AnimatedView animation="slideUp" delay={100}>
+            <Card variant="elevated" size="md" pressable onPress={handleCreateWorkflow} style={styles.quickActionCard}>
+              <View style={styles.quickActionContent}>
+                <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
+                <Text style={styles.quickActionTitle}>Create Workflow</Text>
+                <Text style={styles.quickActionSubtitle}>Build with drag & drop</Text>
+              </View>
+            </Card>
+          </AnimatedView>
 
-          <Card variant="outline" onPress={openLangGraphOAP}>
-            <View style={styles.quickActionContent}>
-              <Ionicons name="desktop" size={32} color={theme.colors.secondary} />
-              <Text style={[sharedStyles.subtitle, { textAlign: 'center' }]}>
-                LangGraph OAP
-              </Text>
-              <Text style={[sharedStyles.caption, { textAlign: 'center' }]}>
-                Advanced editor
-              </Text>
-            </View>
-          </Card>
+          <AnimatedView animation="slideUp" delay={200}>
+            <Card variant="elevated" size="md" pressable onPress={openLangGraphOAP} style={styles.quickActionCard}>
+              <View style={styles.quickActionContent}>
+                <Ionicons name="desktop" size={32} color={theme.colors.secondary} />
+                <Text style={styles.quickActionTitle}>LangGraph OAP</Text>
+                <Text style={styles.quickActionSubtitle}>Advanced editor</Text>
+              </View>
+            </Card>
+          </AnimatedView>
         </View>
 
         {/* Workflows List */}
-        <Text style={[sharedStyles.title, { marginBottom: 16 }]}>
-          Your Workflows ({workflows.length})
-        </Text>
+        <AnimatedView animation="slideUp" delay={300}>
+          <Text style={styles.sectionTitle}>
+            Your Workflows ({workflows.length})
+          </Text>
+        </AnimatedView>
 
         <FlatList
           data={workflows}
@@ -161,15 +301,15 @@ const WorkflowsScreen: React.FC = () => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={[sharedStyles.center, { paddingVertical: 40 }]}>
-              <Ionicons name="git-network" size={48} color={theme.colors.textSecondary} />
-              <Text style={[sharedStyles.body, { marginTop: 16, textAlign: 'center' }]}>
-                No workflows yet
-              </Text>
-              <Text style={[sharedStyles.caption, { textAlign: 'center' }]}>
-                Create your first workflow to get started
-              </Text>
-            </View>
+            <AnimatedView animation="fadeIn" delay={400}>
+              <View style={styles.emptyState}>
+                <Ionicons name="git-network" size={64} color={theme.colors.textSecondary} />
+                <Text style={styles.emptyTitle}>No workflows yet</Text>
+                <Text style={styles.emptySubtitle}>
+                  Create your first workflow to get started
+                </Text>
+              </View>
+            </AnimatedView>
           }
         />
       </View>
@@ -190,57 +330,5 @@ const WorkflowsScreen: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    padding: 24,
-    paddingTop: 60,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#F1F5F9',
-    opacity: 0.9,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  quickActionContent: {
-    alignItems: 'center',
-    gap: 8,
-    padding: 16,
-  },
-  workflowsList: {
-    gap: 12,
-    paddingBottom: 20,
-  },
-  workflowHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  workflowInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  workflowStats: {
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-});
 
 export default WorkflowsScreen;

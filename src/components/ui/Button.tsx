@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
+import { Pressable, Text, View, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import { createSharedStyles } from '../../styles/shared';
@@ -7,13 +7,15 @@ import { createSharedStyles } from '../../styles/shared';
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient' | 'minimal';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   loading?: boolean;
   disabled?: boolean;
   icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
   style?: ViewStyle;
   textStyle?: TextStyle;
+  fullWidth?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -24,8 +26,10 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   disabled = false,
   icon,
+  iconPosition = 'left',
   style,
   textStyle,
+  fullWidth = false,
 }) => {
   const { theme } = useTheme();
   const sharedStyles = createSharedStyles(theme);
@@ -35,47 +39,66 @@ export const Button: React.FC<ButtonProps> = ({
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
       flexDirection: 'row' as const,
-      ...theme.shadows.sm,
+      width: fullWidth ? '100%' : undefined,
     };
 
     const sizeStyles = {
-      sm: {
+      xs: {
         paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
-        borderRadius: theme.borderRadius.md,
+        borderRadius: theme.borderRadius.lg,
         minHeight: 36,
       },
-      md: {
+      sm: {
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
-        borderRadius: theme.borderRadius.lg,
-        minHeight: 44,
+        borderRadius: theme.borderRadius.xl,
+        minHeight: 42,
+      },
+      md: {
+        paddingVertical: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
+        borderRadius: theme.borderRadius.xl,
+        minHeight: 48,
       },
       lg: {
         paddingVertical: theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
         borderRadius: theme.borderRadius.xl,
-        minHeight: 52,
+        minHeight: 54,
+      },
+      xl: {
+        paddingVertical: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xxl,
+        borderRadius: theme.borderRadius.xxl,
+        minHeight: 60,
       },
     };
 
     const variantStyles = {
       primary: {
         backgroundColor: theme.colors.primary,
+        ...theme.shadows.md,
       },
       secondary: {
         backgroundColor: theme.colors.secondary,
+        ...theme.shadows.md,
       },
       outline: {
         backgroundColor: 'transparent',
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: theme.colors.primary,
       },
       ghost: {
         backgroundColor: 'transparent',
       },
+      minimal: {
+        backgroundColor: theme.colors.surfaceHover,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+      },
       gradient: {
-        // Will be handled by LinearGradient
+        ...theme.shadows.md,
       },
     };
 
@@ -83,15 +106,16 @@ export const Button: React.FC<ButtonProps> = ({
       ...baseStyle,
       ...sizeStyles[size],
       ...variantStyles[variant],
-      opacity: disabled ? 0.6 : 1,
     };
   };
 
   const getTextStyle = (): TextStyle => {
     const sizeStyles = {
-      sm: { fontSize: 14, fontWeight: '600' as const },
-      md: { fontSize: 16, fontWeight: '600' as const },
-      lg: { fontSize: 18, fontWeight: '700' as const },
+      xs: { fontSize: 13, fontWeight: '600' as const, letterSpacing: 0.2 },
+      sm: { fontSize: 14, fontWeight: '600' as const, letterSpacing: 0.3 },
+      md: { fontSize: 15, fontWeight: '600' as const, letterSpacing: 0.3 },
+      lg: { fontSize: 16, fontWeight: '600' as const, letterSpacing: 0.4 },
+      xl: { fontSize: 17, fontWeight: '700' as const, letterSpacing: 0.4 },
     };
 
     const variantStyles = {
@@ -99,6 +123,7 @@ export const Button: React.FC<ButtonProps> = ({
       secondary: { color: '#FFFFFF' },
       outline: { color: theme.colors.primary },
       ghost: { color: theme.colors.primary },
+      minimal: { color: theme.colors.text },
       gradient: { color: '#FFFFFF' },
     };
 
@@ -114,31 +139,50 @@ export const Button: React.FC<ButtonProps> = ({
     }
   };
 
+  const renderIcon = () => {
+    if (!icon || loading) return null;
+    return (
+      <View style={{ 
+        marginRight: iconPosition === 'left' && title ? theme.spacing.sm : 0,
+        marginLeft: iconPosition === 'right' && title ? theme.spacing.sm : 0,
+      }}>
+        {icon}
+      </View>
+    );
+  };
+
   const content = (
     <>
       {loading && (
         <ActivityIndicator
           size="small"
-          color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : '#FFFFFF'}
-          style={{ marginRight: icon || title ? theme.spacing.sm : 0 }}
+          color={variant === 'outline' || variant === 'ghost' || variant === 'minimal' ? theme.colors.primary : '#FFFFFF'}
+          style={{ marginRight: title ? theme.spacing.sm : 0 }}
         />
       )}
-      {icon && !loading && (
-        <div style={{ marginRight: title ? theme.spacing.sm : 0 }}>
-          {icon}
-        </div>
-      )}
+      {iconPosition === 'left' && renderIcon()}
       {title && (
         <Text style={[getTextStyle(), textStyle]}>
           {title}
         </Text>
       )}
+      {iconPosition === 'right' && renderIcon()}
     </>
   );
 
   if (variant === 'gradient') {
     return (
-      <TouchableOpacity onPress={handlePress} disabled={disabled || loading} style={style}>
+      <Pressable 
+        onPress={handlePress} 
+        disabled={disabled || loading} 
+        style={({ pressed }) => [
+          style,
+          {
+            opacity: pressed ? 0.9 : disabled ? 0.6 : 1,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+          }
+        ]}
+      >
         <LinearGradient
           colors={theme.gradients.primary}
           start={{ x: 0, y: 0 }}
@@ -147,17 +191,27 @@ export const Button: React.FC<ButtonProps> = ({
         >
           {content}
         </LinearGradient>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={handlePress}
       disabled={disabled || loading}
-      style={[getButtonStyle(), style]}
+      style={({ pressed }) => [
+        getButtonStyle(),
+        style,
+        {
+          opacity: pressed ? 0.8 : disabled ? 0.6 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+          backgroundColor: pressed && variant !== 'ghost' && variant !== 'outline' 
+            ? theme.colors.surfaceHover 
+            : getButtonStyle().backgroundColor,
+        }
+      ]}
     >
       {content}
-    </TouchableOpacity>
+    </Pressable>
   );
 };

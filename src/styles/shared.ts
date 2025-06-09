@@ -13,102 +13,148 @@ export const createSharedStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 
-  // Card styles
+  // Modern card styles with improved spacing and borders
   card: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     ...theme.shadows.md,
   },
 
   cardLarge: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.xxl,
+    padding: theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     ...theme.shadows.lg,
   },
 
   cardSubtle: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     ...theme.shadows.sm,
   },
 
-  // Header styles
+  cardElevated: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.xl,
+  },
+
+  // Header styles with modern spacing
   header: {
     paddingTop: 60,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    paddingBottom: theme.spacing.xl,
   },
 
   headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 34,
+    fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: theme.spacing.xs,
-    letterSpacing: -0.5,
+    marginBottom: theme.spacing.sm,
+    letterSpacing: -0.8,
+    lineHeight: 40,
   },
 
   headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 17,
+    color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
+    lineHeight: 24,
   },
 
-  // Content area
+  // Content area with improved spacing
   content: {
     flex: 1,
-    padding: theme.spacing.md,
+    padding: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
   },
 
   contentPadded: {
     flex: 1,
-    padding: theme.spacing.lg,
+    padding: theme.spacing.xl,
   },
 
-  // Button styles
+  contentSpaced: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+  },
+
+  // Modern button styles with better proportions
   buttonPrimary: {
     backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.lg,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.xl,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 52,
     ...theme.shadows.md,
   },
 
   buttonSecondary: {
     backgroundColor: theme.colors.secondary,
-    borderRadius: theme.borderRadius.lg,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.xl,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 52,
     ...theme.shadows.md,
   },
 
   buttonOutline: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.lg,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.xl,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
+    minHeight: 52,
+  },
+
+  buttonGhost: {
+    backgroundColor: 'transparent',
+    borderRadius: theme.borderRadius.xl,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
   },
 
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+    letterSpacing: 0.3,
   },
 
   buttonTextOutline: {
     color: theme.colors.primary,
     fontSize: 16,
     fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+
+  buttonTextGhost: {
+    color: theme.colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
 
   // Text styles
