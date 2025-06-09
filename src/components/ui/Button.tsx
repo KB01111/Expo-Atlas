@@ -3,6 +3,7 @@ import { Pressable, Text, View, ViewStyle, TextStyle, ActivityIndicator } from '
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import { createSharedStyles } from '../../styles/shared';
+import { MotiView } from '../animations';
 
 interface ButtonProps {
   title: string;
@@ -172,46 +173,56 @@ export const Button: React.FC<ButtonProps> = ({
 
   if (variant === 'gradient') {
     return (
-      <Pressable 
-        onPress={handlePress} 
-        disabled={disabled || loading} 
-        style={({ pressed }) => [
-          style,
-          {
-            opacity: pressed ? 0.9 : disabled ? 0.6 : 1,
-            transform: [{ scale: pressed ? 0.98 : 1 }],
-          }
-        ]}
+      <MotiView
+        preset="scaleIn"
+        tap="scale"
+        hover="lift"
+        style={style}
       >
-        <LinearGradient
-          colors={theme.gradients.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={getButtonStyle()}
+        <Pressable 
+          onPress={handlePress} 
+          disabled={disabled || loading} 
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.9 : disabled ? 0.6 : 1,
+            }
+          ]}
         >
-          {content}
-        </LinearGradient>
-      </Pressable>
+          <LinearGradient
+            colors={theme.gradients.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={getButtonStyle()}
+          >
+            {content}
+          </LinearGradient>
+        </Pressable>
+      </MotiView>
     );
   }
 
   return (
-    <Pressable
-      onPress={handlePress}
-      disabled={disabled || loading}
-      style={({ pressed }) => [
-        getButtonStyle(),
-        style,
-        {
-          opacity: pressed ? 0.8 : disabled ? 0.6 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-          backgroundColor: pressed && variant !== 'ghost' && variant !== 'outline' 
-            ? theme.colors.surfaceHover 
-            : getButtonStyle().backgroundColor,
-        }
-      ]}
+    <MotiView
+      preset="scaleIn"
+      tap="scale"
+      hover="lift"
+      style={style}
     >
-      {content}
-    </Pressable>
+      <Pressable
+        onPress={handlePress}
+        disabled={disabled || loading}
+        style={({ pressed }) => [
+          getButtonStyle(),
+          {
+            opacity: pressed ? 0.8 : disabled ? 0.6 : 1,
+            backgroundColor: pressed && variant !== 'ghost' && variant !== 'outline' 
+              ? theme.colors.surfaceHover 
+              : getButtonStyle().backgroundColor,
+          }
+        ]}
+      >
+        {content}
+      </Pressable>
+    </MotiView>
   );
 };

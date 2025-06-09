@@ -44,6 +44,7 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 - Navigation: `@react-navigation/*` (stack, bottom-tabs, drawer)
 - Charts: `react-native-chart-kit`, `victory-native`
 - UI: `@expo/vector-icons`, `react-native-vector-icons`
+- Animations: `react-native-reanimated`, `react-native-gesture-handler`, `moti`, `lottie-react-native`
 
 **Environment Variables Required:**
 - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk authentication
@@ -69,6 +70,17 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 - Tool integration including code interpreter, file search, and custom functions
 - Automatic cost calculation and token usage tracking
 - Proper error handling and database persistence integration
+
+**Animation System:**
+- Comprehensive animation foundation using React Native Reanimated 3 + Gesture Handler
+- Moti integration for Framer Motion-like declarative syntax in `src/components/animations/MotiView.tsx`
+- Lottie support for After Effects animations in `src/components/animations/LottieAnimation.tsx`
+- Gesture-enabled animations with pan, pinch, tap, and long press support
+- Animation utilities and presets in `src/utils/animations.ts` with timing, spring, and easing configurations
+- Enhanced AnimatedView components with staggered animations, interaction effects, and performance optimization
+- Comprehensive animation presets: fadeIn/Out, slide directions, scale, bounce, pulse, shake, rubberBand, flip, rotate
+- Gesture-based interactions with haptic feedback, ripple effects, and magnetic behaviors
+- Layout animations and transition support with spring configurations
 
 **Development Guidelines:**
 - Use shared theme system for all styling decisions

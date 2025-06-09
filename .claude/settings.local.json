@@ -26,7 +26,8 @@
       "Bash(true)",
       "Bash(npx tsc:*)",
       "Bash(npm info:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }
