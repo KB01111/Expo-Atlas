@@ -1,12 +1,18 @@
 // OpenAI Agents SDK Types and Interfaces
+import type { AssistantTool } from 'openai/resources/beta/assistants';
+import type { Run } from 'openai/resources/beta/threads/runs';
+import type { Message } from 'openai/resources/beta/threads/messages';
+
+// Custom function definition interface
+export interface FunctionDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, any>;
+}
 
 export interface OpenAIAgentTool {
   type: 'function' | 'code_interpreter' | 'file_search';
-  function?: {
-    name: string;
-    description: string;
-    parameters: Record<string, any>;
-  };
+  function?: FunctionDefinition;
 }
 
 export interface OpenAIAgentConfig {
@@ -38,6 +44,8 @@ export interface OpenAIAgent {
   temperature?: number;
   top_p?: number;
   max_tokens?: number;
+  // OpenAI specific fields
+  openai_assistant_id?: string;
 }
 
 export interface OpenAIAgentMessage {
@@ -47,6 +55,9 @@ export interface OpenAIAgentMessage {
   timestamp: string;
   tool_calls?: OpenAIToolCall[];
   metadata?: Record<string, any>;
+  // OpenAI specific fields
+  thread_id?: string;
+  assistant_id?: string;
 }
 
 export interface OpenAIToolCall {
@@ -72,6 +83,10 @@ export interface OpenAIAgentExecution {
   metadata: Record<string, any>;
   error?: string;
   duration?: number;
+  // OpenAI specific fields
+  thread_id?: string;
+  run_id?: string;
+  run_status?: Run['status'];
 }
 
 export interface OpenAIStreamingEvent {
@@ -87,6 +102,10 @@ export interface OpenAIAgentRunOptions {
   metadata?: Record<string, any>;
   temperature?: number;
   max_tokens?: number;
+  // OpenAI specific options
+  assistant_id?: string;
+  thread_id?: string;
+  instructions?: string;
 }
 
 export interface OpenAIAgentStats {
@@ -160,6 +179,7 @@ export interface OpenAIAPIConfig {
   baseURL?: string;
   timeout?: number;
   maxRetries?: number;
+  dangerouslyAllowBrowser?: boolean; // Required for React Native/Expo
 }
 
 export interface OpenAIAgentError {

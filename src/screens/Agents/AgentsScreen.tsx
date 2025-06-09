@@ -418,7 +418,7 @@ const AgentsScreen: React.FC = () => {
 
         {allFilteredAgents.length > 0 ? (
           <FlatList
-            data={allFilteredAgents}
+            data={allFilteredAgents as (Agent | OpenAIAgent)[]}
             renderItem={({ item, index }) => 
               agentType === 'standard' 
                 ? renderAgent({ item: item as Agent, index })

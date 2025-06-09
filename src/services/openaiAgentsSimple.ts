@@ -1,19 +1,54 @@
+import { Agent } from '@openai/agents';
+import OpenAI from 'openai';
 import { OpenAIAgent, OpenAIAgentConfig, OpenAIAgentExecution, OpenAIAgentMessage } from '../types/openai';
 import { supabaseService } from './supabase';
 import { Agent as DatabaseAgent } from '../types';
 
 class OpenAIAgentsService {
+  private openai: OpenAI;
   private apiKey: string;
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
     if (!this.apiKey) {
       console.warn('OpenAI API key not found. Please set EXPO_PUBLIC_OPENAI_API_KEY environment variable.');
+      // Create a placeholder client
+      this.openai = new OpenAI({ apiKey: 'placeholder' });
+    } else {
+      this.openai = new OpenAI({ 
+        apiKey: this.apiKey,
+        organization: process.env.EXPO_PUBLIC_OPENAI_ORGANIZATION,
+        dangerouslyAllowBrowser: true // Required for React Native/Expo
+      });
     }
   }
 
   async createAgent(config: OpenAIAgentConfig): Promise<OpenAIAgent> {
     try {
+      if (!this.apiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
+
+      // Create OpenAI Assistant using the official SDK
+      const assistant = await this.openai.beta.assistants.create({
+        name: config.name,
+        description: config.description,
+        instructions: config.instructions,
+        model: config.model || 'gpt-4',
+        tools: config.tools?.map(tool => {
+          if (tool.type === 'function') {
+            return {
+              type: 'function',
+              function: tool.function!
+            };
+          }
+          return { type: tool.type };
+        }) || [],
+        temperature: config.temperature,
+        top_p: config.top_p,
+        metadata: config.metadata || {}
+      });
+
       // Create database record for the agent
       const databaseAgent: Omit<DatabaseAgent, 'id' | 'created_at' | 'updated_at' | 'tasks' | 'successRate'> = {
         name: config.name,
@@ -22,6 +57,7 @@ class OpenAIAgentsService {
         provider: 'openai-agents',
         model: config.model || 'gpt-4',
         configuration: {
+          openai_assistant_id: assistant.id,
           instructions: config.instructions,
           tools: config.tools || [],
           metadata: config.metadata || {},
@@ -43,7 +79,7 @@ class OpenAIAgentsService {
         model: savedAgent.model,
         instructions: config.instructions,
         tools: config.tools || [],
-        metadata: config.metadata || {},
+        metadata: { ...config.metadata, openai_assistant_id: assistant.id },
         status: savedAgent.status as 'active' | 'inactive' | 'error',
         created_at: savedAgent.created_at,
         updated_at: savedAgent.updated_at,
@@ -64,9 +100,18 @@ class OpenAIAgentsService {
 
   async executeAgent(agentId: string, input: string, context?: Record<string, any>): Promise<OpenAIAgentExecution> {
     try {
+      if (!this.apiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
+
       const agent = await this.getAgent(agentId);
       if (!agent) {
         throw new Error(`Agent with ID ${agentId} not found`);
+      }
+
+      const openaiAssistantId = agent.metadata?.openai_assistant_id;
+      if (!openaiAssistantId) {
+        throw new Error('OpenAI Assistant ID not found for agent');
       }
 
       const startTime = new Date();
@@ -97,15 +142,51 @@ class OpenAIAgentsService {
         metadata: context || {}
       };
 
-      // Simulate OpenAI API call
       try {
-        const response = await this.callOpenAIAPI(agent, input);
-        execution.output = response.output;
-        execution.tokensUsed = response.tokensUsed;
-        execution.cost = response.cost;
-        execution.messages = response.messages;
-        execution.status = 'completed';
+        // Create a thread
+        const thread = await this.openai.beta.threads.create();
+
+        // Add message to thread
+        await this.openai.beta.threads.messages.create(thread.id, {
+          role: 'user',
+          content: input
+        });
+
+        // Create and poll run
+        const run = await this.openai.beta.threads.runs.createAndPoll(thread.id, {
+          assistant_id: openaiAssistantId,
+          temperature: agent.temperature,
+          max_prompt_tokens: agent.max_tokens
+        });
+
+        if (run.status === 'completed') {
+          // Get messages
+          const messages = await this.openai.beta.threads.messages.list(thread.id);
+          const assistantMessages = messages.data.filter(msg => msg.role === 'assistant');
+          
+          if (assistantMessages.length > 0) {
+            const lastMessage = assistantMessages[0];
+            const content = lastMessage.content[0];
+            
+            if (content.type === 'text') {
+              execution.output = content.text.value;
+            }
+          }
+
+          // Calculate tokens and cost (approximation)
+          execution.tokensUsed = run.usage?.total_tokens || 0;
+          execution.cost = this.calculateCost(execution.tokensUsed, agent.model);
+          execution.status = 'completed';
+        } else {
+          execution.status = 'failed';
+          execution.output = `Run failed with status: ${run.status}`;
+        }
+
         execution.endTime = new Date().toISOString();
+
+        // Clean up thread
+        await this.openai.beta.threads.delete(thread.id);
+
       } catch (error) {
         execution.status = 'failed';
         execution.output = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -129,72 +210,6 @@ class OpenAIAgentsService {
     }
   }
 
-  private async callOpenAIAPI(agent: OpenAIAgent, input: string): Promise<{
-    output: string;
-    tokensUsed: number;
-    cost: number;
-    messages: OpenAIAgentMessage[];
-  }> {
-    if (!this.apiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
-
-    // This is a simplified OpenAI API call
-    // In a real implementation, you would use the actual OpenAI SDK
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: agent.model,
-        messages: [
-          {
-            role: 'system',
-            content: agent.instructions
-          },
-          {
-            role: 'user',
-            content: input
-          }
-        ],
-        temperature: agent.temperature || 0.7,
-        max_tokens: agent.max_tokens || 1000,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const output = data.choices[0]?.message?.content || 'No response';
-    const tokensUsed = data.usage?.total_tokens || 0;
-    const cost = this.calculateCost(tokensUsed, agent.model);
-
-    const messages: OpenAIAgentMessage[] = [
-      {
-        id: `msg_${Date.now()}_user`,
-        role: 'user',
-        content: input,
-        timestamp: new Date().toISOString()
-      },
-      {
-        id: `msg_${Date.now()}_assistant`,
-        role: 'assistant',
-        content: output,
-        timestamp: new Date().toISOString()
-      }
-    ];
-
-    return {
-      output,
-      tokensUsed,
-      cost,
-      messages
-    };
-  }
 
   async getAgent(agentId: string): Promise<OpenAIAgent | null> {
     try {
@@ -231,16 +246,52 @@ class OpenAIAgentsService {
 
   async updateAgent(agentId: string, updates: Partial<OpenAIAgentConfig>): Promise<OpenAIAgent> {
     try {
+      if (!this.apiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
+
       const existingAgent = await this.getAgent(agentId);
       if (!existingAgent) {
         throw new Error(`Agent with ID ${agentId} not found`);
       }
 
+      const openaiAssistantId = existingAgent.metadata?.openai_assistant_id;
+      if (openaiAssistantId) {
+        // Update the OpenAI Assistant
+        await this.openai.beta.assistants.update(openaiAssistantId, {
+          name: updates.name || existingAgent.name,
+          description: updates.description || existingAgent.description,
+          instructions: updates.instructions || existingAgent.instructions,
+          model: updates.model || existingAgent.model,
+          tools: updates.tools?.map(tool => {
+            if (tool.type === 'function') {
+              return {
+                type: 'function',
+                function: tool.function!
+              };
+            }
+            return { type: tool.type };
+          }) || existingAgent.tools.map(tool => {
+            if (tool.type === 'function') {
+              return {
+                type: 'function',
+                function: tool.function!
+              };
+            }
+            return { type: tool.type };
+          }),
+          temperature: updates.temperature || existingAgent.temperature,
+          top_p: updates.top_p || existingAgent.top_p,
+          metadata: { ...existingAgent.metadata, ...updates.metadata }
+        });
+      }
+
       // Update the database record
       const updatedConfig = {
+        openai_assistant_id: openaiAssistantId,
         instructions: updates.instructions || existingAgent.instructions,
         tools: updates.tools || existingAgent.tools,
-        metadata: updates.metadata || existingAgent.metadata,
+        metadata: { ...existingAgent.metadata, ...updates.metadata },
         temperature: updates.temperature || existingAgent.temperature,
         top_p: updates.top_p || existingAgent.top_p,
         max_tokens: updates.max_tokens || existingAgent.max_tokens
@@ -283,6 +334,19 @@ class OpenAIAgentsService {
 
   async deleteAgent(agentId: string): Promise<boolean> {
     try {
+      const agent = await this.getAgent(agentId);
+      if (agent && this.apiKey) {
+        const openaiAssistantId = agent.metadata?.openai_assistant_id;
+        if (openaiAssistantId) {
+          // Delete the OpenAI Assistant
+          try {
+            await this.openai.beta.assistants.delete(openaiAssistantId);
+          } catch (error) {
+            console.warn('Failed to delete OpenAI assistant, continuing with database deletion:', error);
+          }
+        }
+      }
+
       // Delete from database
       const success = await supabaseService.deleteAgent(agentId);
       return success;

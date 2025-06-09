@@ -60,13 +60,15 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 - Animated components with built-in micro-interactions
 
 **OpenAI Agents Integration:**
-- Full support for OpenAI Agents SDK with agent creation, execution, and monitoring
-- Service layer at `src/services/openaiAgents.ts` for all OpenAI operations
-- Complete type definitions in `src/types/openai.ts` for type safety
-- UI components for agent management, execution, and configuration
+- Full support for OpenAI Agents SDK (`@openai/agents@0.0.4`) with official OpenAI SDK (`openai@5.1.1`)
+- Service layer at `src/services/openaiAgentsSimple.ts` using actual OpenAI Assistants API
+- Complete type definitions in `src/types/openai.ts` aligned with OpenAI SDK types
+- UI components for agent management, execution, and configuration in `src/components/openai/`
 - Template-based agent creation with predefined roles (assistant, coder, researcher, analyst)
-- Real-time execution with streaming support and cost tracking
+- Real assistant execution using OpenAI Threads and Runs API with proper cleanup
 - Tool integration including code interpreter, file search, and custom functions
+- Automatic cost calculation and token usage tracking
+- Proper error handling and database persistence integration
 
 **Development Guidelines:**
 - Use shared theme system for all styling decisions

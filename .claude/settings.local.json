@@ -24,7 +24,9 @@
       "Bash(npm run web:*)",
       "Bash(pkill:*)",
       "Bash(true)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm info:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

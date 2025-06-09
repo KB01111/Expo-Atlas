@@ -333,8 +333,11 @@ const OpenAIAgentModal: React.FC<OpenAIAgentModalProps> = ({
       
       const toolSet = new Set<string>();
       template.tools.forEach(tool => {
-        if (tool.type === 'function' && 'function' in tool && tool.function) {
-          toolSet.add(tool.function.name);
+        if (tool.type === 'function') {
+          const functionTool = tool as { type: 'function'; function: { name: string } };
+          if (functionTool.function) {
+            toolSet.add(functionTool.function.name);
+          }
         } else {
           toolSet.add(tool.type);
         }
@@ -377,7 +380,7 @@ const OpenAIAgentModal: React.FC<OpenAIAgentModalProps> = ({
     const newAgent: OpenAIAgent = {
       id: agent?.id || `openai_agent_${Date.now()}`,
       name: config.name,
-      description: config.description || '',
+      description: config.description,
       model: config.model,
       instructions: config.instructions,
       tools: config.tools || [],
