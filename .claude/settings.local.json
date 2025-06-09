@@ -29,7 +29,12 @@
       "Bash(rm:*)",
       "Bash(mkdir:*)",
       "Bash(npx expo:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(timeout 30s npx expo export --platform web --dev)",
+      "Bash(npx @expo/cli export:*)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/test-web-build.sh:*)"
     ],
     "deny": []
   }

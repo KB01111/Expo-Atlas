@@ -14,7 +14,4 @@ config.transformer.getTransformOptions = async () => ({
   },
 });
 
-// Enable caching for better performance
-config.transformer.enableBabelRuntime = false;
-
 module.exports = config;
