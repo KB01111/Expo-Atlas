@@ -27,7 +27,9 @@
       "Bash(npx tsc:*)",
       "Bash(npm info:*)",
       "Bash(rm:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(npx expo:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
