@@ -234,3 +234,28 @@ export interface OpenAIAgentEvent {
   data: any;
   timestamp: string;
 }
+
+export interface AgentTestConversation {
+  id: string;
+  name: string;
+  messages: Array<{ role: 'user' | 'assistant'; content: string; timestamp: string }>;
+  metrics: {
+    response_time_ms: number;
+    tokens_used: number;
+    cost: number;
+  };
+  status: 'running' | 'completed' | 'failed';
+  error?: string;
+  created_at: string;
+}
+
+export interface AgentTestMetrics {
+  total_tests: number;
+  passed_tests: number;
+  failed_tests: number;
+  average_response_time: number;
+  average_cost_per_interaction: number;
+  total_tokens_used: number;
+  success_rate: number;
+  common_failures: Array<{ message: string; count: number }>;
+}

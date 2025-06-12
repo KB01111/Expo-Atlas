@@ -517,7 +517,8 @@ class AgentBuilderService {
         cost: 0
       },
       status: 'running',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      error: undefined
     };
 
     try {
@@ -592,7 +593,13 @@ class AgentBuilderService {
       return conversation;
     } catch (error) {
       conversation.status = 'failed';
+      conversation.error = error instanceof Error ? error.message : String(error);
       console.error('Test conversation failed:', error);
+
+      // Save failed conversation for metrics
+      state.preview.test_conversations.push(conversation);
+      await supabaseService.saveAgentBuilderState(builderId, state);
+
       throw error;
     }
   }
@@ -651,6 +658,13 @@ class AgentBuilderService {
     const totalCost = completedTests.reduce((sum, c) => sum + c.metrics.cost, 0);
     const totalResponseTime = completedTests.reduce((sum, c) => sum + c.metrics.response_time_ms, 0);
 
+    const failureMap: Record<string, number> = {};
+    for (const convo of failedTests) {
+      const message = convo.error || 'Unknown Error';
+      failureMap[message] = (failureMap[message] || 0) + 1;
+    }
+    const commonFailures = Object.entries(failureMap).map(([message, count]) => ({ message, count }));
+
     return {
       total_tests: conversations.length,
       passed_tests: completedTests.length,
@@ -659,7 +673,7 @@ class AgentBuilderService {
       average_cost_per_interaction: completedTests.length > 0 ? totalCost / completedTests.length : 0,
       total_tokens_used: totalTokens,
       success_rate: conversations.length > 0 ? completedTests.length / conversations.length : 0,
-      common_failures: [] // TODO: Analyze failure patterns
+      common_failures: commonFailures
     };
   }
 
