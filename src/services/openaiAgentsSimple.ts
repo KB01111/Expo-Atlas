@@ -6,6 +6,9 @@ import { Agent as DatabaseAgent } from '../types';
 import { openaiModelsService } from './openaiModels';
 import { openaiAgentsSDK } from './openaiAgentsSDK';
 
+// Simple in-memory tracker for tool usage
+const toolUsageTracker: Record<string, number> = {};
+
 class OpenAIAgentsService {
   private openai: OpenAI;
   private apiKey: string;
@@ -162,17 +165,27 @@ class OpenAIAgentsService {
           max_prompt_tokens: agent.max_tokens
         });
 
+        const invokedTools: string[] = [];
         if (run.status === 'completed') {
           // Get messages
           const messages = await this.openai.beta.threads.messages.list(thread.id);
           const assistantMessages = messages.data.filter((msg: any) => msg.role === 'assistant');
-          
+
           if (assistantMessages.length > 0) {
             const lastMessage = assistantMessages[0];
             const content = lastMessage.content[0];
-            
+
             if (content.type === 'text') {
               execution.output = content.text.value;
+            }
+
+            // Track tool calls from message metadata
+            if (Array.isArray(lastMessage.tool_calls)) {
+              for (const call of lastMessage.tool_calls) {
+                const toolName = call.type === 'function' ? call.function.name : call.type;
+                invokedTools.push(toolName);
+                toolUsageTracker[toolName] = (toolUsageTracker[toolName] || 0) + 1;
+              }
             }
           }
 
@@ -190,6 +203,11 @@ class OpenAIAgentsService {
         // Clean up thread
         await this.openai.beta.threads.delete(thread.id);
 
+        // Save invoked tools in execution metadata
+        if (invokedTools.length > 0) {
+          execution.metadata = { ...execution.metadata, tools_used: invokedTools };
+        }
+
       } catch (error) {
         execution.status = 'failed';
         execution.output = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
@@ -203,7 +221,8 @@ class OpenAIAgentsService {
         completed_at: execution.endTime,
         tokens_used: execution.tokensUsed,
         cost: execution.cost,
-        error: execution.status === 'failed' ? execution.output : null
+        error: execution.status === 'failed' ? execution.output : null,
+        metadata: execution.metadata
       });
 
       return execution;

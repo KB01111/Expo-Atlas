@@ -157,6 +157,22 @@ const AnalyticsScreen: React.FC = () => {
 
   const usageData = getUsageData();
 
+  const getToolUsageData = () => {
+    if (!analytics || !analytics.toolUsage) {
+      return [] as { name: string; population: number; color: string; legendFontColor: string; legendFontSize: number }[];
+    }
+    const colors = [theme.colors.primary, theme.colors.secondary, theme.colors.success, theme.colors.warning, theme.colors.error];
+    return analytics.toolUsage.slice(0, 5).map((item: any, idx: number) => ({
+      name: item.tool,
+      population: item.count,
+      color: colors[idx % colors.length],
+      legendFontColor: theme.colors.text,
+      legendFontSize: 12,
+    }));
+  };
+
+  const toolUsageData = getToolUsageData();
+
   const chartConfig = {
     backgroundColor: theme.colors.surface,
     backgroundGradientFrom: theme.colors.surface,
@@ -273,6 +289,27 @@ const AnalyticsScreen: React.FC = () => {
             )}
           </Card>
         </AnimatedView>
+
+        {toolUsageData.length > 0 && (
+          <AnimatedView animation="slideUp" delay={600}>
+            <Card variant="elevated" size="lg" style={styles.chartCard}>
+              <View style={styles.chartHeader}>
+                <Ionicons name="construct" size={20} color={theme.colors.primary} />
+                <Text style={styles.chartTitle}>Top Tools</Text>
+              </View>
+              <PieChart
+                data={toolUsageData}
+                width={width - 80}
+                height={220}
+                chartConfig={Platform.OS !== 'web' ? chartConfig : undefined}
+                accessor={Platform.OS !== 'web' ? 'population' : undefined}
+                backgroundColor={Platform.OS !== 'web' ? 'transparent' : undefined}
+                paddingLeft={Platform.OS !== 'web' ? '15' : undefined}
+                absolute={Platform.OS !== 'web' ? true : undefined}
+              />
+            </Card>
+          </AnimatedView>
+        )}
       </View>
     </ScrollView>
   );

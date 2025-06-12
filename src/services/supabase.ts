@@ -187,10 +187,30 @@ export const supabaseService = {
         .not('cost', 'is', null)
         .order('started_at', { ascending: true });
 
+      const { data: toolRows } = await supabase
+        .from('executions')
+        .select('metadata')
+        .order('started_at', { ascending: true });
+
+      const toolCounts: Record<string, number> = {};
+      (toolRows || []).forEach(row => {
+        const tools = (row.metadata as any)?.tools_used as string[] | undefined;
+        if (Array.isArray(tools)) {
+          tools.forEach(t => {
+            toolCounts[t] = (toolCounts[t] || 0) + 1;
+          });
+        }
+      });
+
+      const toolUsage = Object.entries(toolCounts)
+        .map(([tool, count]) => ({ tool, count }))
+        .sort((a, b) => b.count - a.count);
+
       return {
         usage: usageData || [],
         performance: performanceData || [],
         costs: costData || [],
+        toolUsage,
       };
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -198,6 +218,7 @@ export const supabaseService = {
         usage: [],
         performance: [],
         costs: [],
+        toolUsage: [],
       };
     }
   },
@@ -456,7 +477,7 @@ export const supabaseService = {
     try {
       const { data, error } = await supabase
         .from('executions')
-        .update({ 
+        .update({
           status: 'failed',
           error: 'Stopped by user',
           completed_at: new Date().toISOString()
@@ -469,6 +490,62 @@ export const supabaseService = {
       return data;
     } catch (error) {
       console.error('Error stopping execution:', error);
+      return null;
+    }
+  },
+
+  async getAgentExecutions(agentId: string, timePeriod = '7d') {
+    try {
+      const since = new Date();
+      const days = parseInt(timePeriod.replace('d', ''), 10);
+      since.setDate(since.getDate() - (isNaN(days) ? 7 : days));
+
+      const { data, error } = await supabase
+        .from('executions')
+        .select('*')
+        .eq('agent_id', agentId)
+        .gte('started_at', since.toISOString());
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching agent executions:', error);
+      return [];
+    }
+  },
+
+  async getTeamExecutions(teamId: string, timePeriod = '7d') {
+    try {
+      const since = new Date();
+      const days = parseInt(timePeriod.replace('d', ''), 10);
+      since.setDate(since.getDate() - (isNaN(days) ? 7 : days));
+
+      const { data, error } = await supabase
+        .from('executions')
+        .select('*')
+        .eq('team_id', teamId)
+        .gte('started_at', since.toISOString());
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching team executions:', error);
+      return [];
+    }
+  },
+
+  async saveTeamExecution(execution: any) {
+    try {
+      const { data, error } = await supabase
+        .from('executions')
+        .insert(execution)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error saving team execution:', error);
       return null;
     }
   },
