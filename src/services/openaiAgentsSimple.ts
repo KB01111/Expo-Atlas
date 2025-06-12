@@ -1,9 +1,10 @@
-// import { Agent } from '@openai/agents';
+// import { Agent } from '@openai/agents'; // Note: Experimental SDK, using standard OpenAI SDK
 import OpenAI from 'openai';
 import { OpenAIAgent, OpenAIAgentConfig, OpenAIAgentExecution, OpenAIAgentMessage } from '../types/openai';
 import { supabaseService } from './supabase';
 import { Agent as DatabaseAgent } from '../types';
 import { openaiModelsService } from './openaiModels';
+import { openaiAgentsSDK } from './openaiAgentsSDK';
 
 class OpenAIAgentsService {
   private openai: OpenAI;
