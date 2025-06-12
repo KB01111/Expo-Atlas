@@ -360,9 +360,12 @@ const AgentsScreen: React.FC = () => {
           </View>
 
           <View style={styles.statItem}>
-            <TouchableOpacity onPress={() => handleExecuteOpenAIAgent(item)}>
-              <Button title="Execute" variant="minimal" size="xs" onPress={() => {}} />
-            </TouchableOpacity>
+            <Button
+              title="Execute"
+              variant="minimal"
+              size="xs"
+              onPress={() => handleExecuteOpenAIAgent(item)}
+            />
           </View>
         </View>
       </Card>

@@ -162,7 +162,8 @@ class OpenAIAgentsService {
         const run = await this.openai.beta.threads.runs.createAndPoll(thread.id, {
           assistant_id: openaiAssistantId,
           temperature: agent.temperature,
-          max_prompt_tokens: agent.max_tokens
+          // OpenAI API uses max_completion_tokens to limit the assistant's response length
+          max_completion_tokens: agent.max_tokens
         });
 
         const invokedTools: string[] = [];
@@ -235,9 +236,7 @@ class OpenAIAgentsService {
 
   async getAgent(agentId: string): Promise<OpenAIAgent | null> {
     try {
-      // Get all agents from database to find the OpenAI agent
-      const agents = await supabaseService.getAgents();
-      const dbAgent = agents.find(a => a.id === agentId && a.provider === 'openai-agents');
+      const dbAgent = await supabaseService.getAgentById(agentId, 'openai-agents');
       
       if (!dbAgent) return null;
 
@@ -460,9 +459,16 @@ class OpenAIAgentsService {
     return (tokensInK * modelPricing.input + tokensInK * modelPricing.output) / 2;
   }
 
-  getAgentCount(): number {
-    // This would need to be cached or fetched from database
-    return 0;
+  private agentCountCache: { count: number; timestamp: number } = { count: 0, timestamp: 0 };
+
+  async getAgentCount(forceRefresh = false): Promise<number> {
+    const now = Date.now();
+    if (!forceRefresh && now - this.agentCountCache.timestamp < 60000 && this.agentCountCache.count) {
+      return this.agentCountCache.count;
+    }
+    const count = await supabaseService.getAgentCount();
+    this.agentCountCache = { count, timestamp: now };
+    return count;
   }
 
   isConfigured(): boolean {

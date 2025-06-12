@@ -5,7 +5,7 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRncWh4dHJ2b2Vid2hqc2xsY2NrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MTExNzE0MywiZXhwIjoyMDU2NjkzMTQzfQ.L6XKlByGGMXNO-TF7gmlGmzfVjAGw_qv75Ct3VLKj0E'; // Service role key
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY; // Service role key
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

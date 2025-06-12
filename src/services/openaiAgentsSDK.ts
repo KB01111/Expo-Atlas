@@ -331,7 +331,7 @@ class OpenAIAgentsSDKService {
    * Upload file for assistant use
    */
   public async uploadFile(
-    file: File | Blob,
+    file: string | { uri: string; name: string; type?: string },
     purpose: 'assistants' | 'fine-tune' = 'assistants'
   ): Promise<{
     id: string;
@@ -344,10 +344,35 @@ class OpenAIAgentsSDKService {
     }
 
     try {
-      const uploadedFile = await this.openai.files.create({
-        file: file,
-        purpose: purpose
+      const formData = new FormData();
+      if (typeof file === 'string') {
+        const name = file.split('/').pop() || 'file';
+        formData.append('file', {
+          uri: file,
+          name,
+          type: 'application/octet-stream'
+        } as any);
+      } else {
+        formData.append('file', file as any);
+      }
+      formData.append('purpose', purpose);
+
+      const response = await fetch(`${this.config.baseURL}/files`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          ...(this.config.organization
+            ? { 'OpenAI-Organization': this.config.organization }
+            : {})
+        },
+        body: formData
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const uploadedFile = await response.json();
 
       return {
         id: uploadedFile.id,
