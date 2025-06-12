@@ -8,12 +8,14 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Card, Button, Modal } from '../ui';
 import { OpenAIAgent, OpenAIAgentConfig, OpenAIAgentTool } from '../../types/openai';
 import { AppTheme } from '../../types';
+import { openaiModelsService, OpenAIModelInfo, ModelCategory } from '../../services/openaiModels';
 
 interface OpenAIAgentModalProps {
   visible: boolean;
@@ -67,12 +69,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: 8,
   },
   modelOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    padding: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
+    marginBottom: 8,
+    flex: 1,
+    minWidth: '48%',
   },
   modelOptionSelected: {
     backgroundColor: theme.colors.primary,
@@ -85,6 +89,61 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   modelOptionTextSelected: {
     color: '#FFFFFF',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+  },
+  categorySelector: {
+    marginBottom: 12,
+  },
+  categoryOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    marginRight: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  categoryOptionSelected: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  categoryOptionText: {
+    fontSize: 12,
+    color: theme.colors.text,
+    fontWeight: '500',
+  },
+  categoryOptionTextSelected: {
+    color: '#FFFFFF',
+  },
+  categoryCount: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginLeft: 4,
+  },
+  modelOptionContent: {
+    flex: 1,
+  },
+  capabilityIcons: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 2,
+  },
+  modelDescription: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
   },
   toolSection: {
     marginTop: 16,
@@ -172,13 +231,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
 });
 
-const AVAILABLE_MODELS = [
-  'gpt-4',
-  'gpt-4-turbo',
-  'gpt-3.5-turbo',
-  'gpt-4o',
-  'gpt-4o-mini'
-];
+// Dynamic models will be loaded from OpenAI API
 
 const AVAILABLE_TOOLS: OpenAIAgentTool[] = [
   {
@@ -273,6 +326,12 @@ const OpenAIAgentModal: React.FC<OpenAIAgentModalProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [enabledTools, setEnabledTools] = useState<Set<string>>(new Set());
   const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Dynamic model loading
+  const [modelCategories, setModelCategories] = useState<ModelCategory[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
+  const [selectedModelCategory, setSelectedModelCategory] = useState<string>('Latest GPT Models');
 
   useEffect(() => {
     if (agent && isEditing) {
@@ -301,6 +360,39 @@ const OpenAIAgentModal: React.FC<OpenAIAgentModalProps> = ({
       resetForm();
     }
   }, [agent, isEditing, visible]);
+
+  // Load available models
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        setModelsLoading(true);
+        const categories = await openaiModelsService.getModelsByCategory();
+        const allModelIds = await openaiModelsService.getAvailableModelIds();
+        
+        setModelCategories(categories);
+        setAvailableModels(allModelIds);
+        
+        // Set default model to latest available
+        if (allModelIds.length > 0 && !agent) {
+          const latestModels = categories.find(cat => cat.category === 'Latest GPT Models')?.models || [];
+          const defaultModel = latestModels[0]?.id || allModelIds[0];
+          setConfig(prev => ({ ...prev, model: defaultModel }));
+        }
+      } catch (error) {
+        console.error('Failed to load models:', error);
+        // Fallback to static list
+        const fallbackModels = ['gpt-4.5', 'gpt-4.1', 'o4-mini', 'gpt-4o', 'gpt-4o-mini', 'gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+        setAvailableModels(fallbackModels);
+        setConfig(prev => ({ ...prev, model: 'gpt-4.5' }));
+      } finally {
+        setModelsLoading(false);
+      }
+    };
+
+    if (visible) {
+      loadModels();
+    }
+  }, [visible, agent]);
 
   const resetForm = () => {
     setConfig({
@@ -333,13 +425,13 @@ const OpenAIAgentModal: React.FC<OpenAIAgentModalProps> = ({
       
       const toolSet = new Set<string>();
       template.tools.forEach(tool => {
-        if (tool.type === 'function') {
-          const functionTool = tool as { type: 'function'; function: { name: string } };
+        if ((tool as any).type === 'function') {
+          const functionTool = tool as any;
           if (functionTool.function) {
             toolSet.add(functionTool.function.name);
           }
         } else {
-          toolSet.add(tool.type);
+          toolSet.add((tool as any).type);
         }
       });
       setEnabledTools(toolSet);
@@ -381,7 +473,7 @@ const OpenAIAgentModal: React.FC<OpenAIAgentModalProps> = ({
       id: agent?.id || `openai_agent_${Date.now()}`,
       name: config.name,
       description: config.description,
-      model: config.model,
+      model: config.model || 'gpt-4o-mini',
       instructions: config.instructions,
       tools: config.tools || [],
       metadata: config.metadata || {},
@@ -496,25 +588,92 @@ const OpenAIAgentModal: React.FC<OpenAIAgentModalProps> = ({
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Model Selection</Text>
-          <View style={styles.modelSelector}>
-            {AVAILABLE_MODELS.map((model) => (
-              <TouchableOpacity
-                key={model}
-                style={[
-                  styles.modelOption,
-                  config.model === model && styles.modelOptionSelected
-                ]}
-                onPress={() => setConfig(prev => ({ ...prev, model }))}
-              >
-                <Text style={[
-                  styles.modelOptionText,
-                  config.model === model && styles.modelOptionTextSelected
-                ]}>
-                  {model}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          
+          {modelsLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <Text style={styles.loadingText}>Loading latest models...</Text>
+            </View>
+          ) : (
+            <>
+              {/* Model Categories */}
+              {modelCategories.length > 0 && (
+                <View style={styles.categorySelector}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {modelCategories.map((category) => (
+                      <TouchableOpacity
+                        key={category.category}
+                        style={[
+                          styles.categoryOption,
+                          selectedModelCategory === category.category && styles.categoryOptionSelected
+                        ]}
+                        onPress={() => setSelectedModelCategory(category.category)}
+                      >
+                        <Text style={[
+                          styles.categoryOptionText,
+                          selectedModelCategory === category.category && styles.categoryOptionTextSelected
+                        ]}>
+                          {category.category}
+                        </Text>
+                        <Text style={styles.categoryCount}>
+                          ({category.models.length})
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Selected Category Models */}
+              <View style={styles.modelSelector}>
+                {(() => {
+                  const selectedCategory = modelCategories.find(cat => cat.category === selectedModelCategory);
+                  const modelsToShow = selectedCategory?.models || availableModels.map(id => ({ id, description: 'OpenAI model' }));
+                  
+                  return modelsToShow.map((model) => {
+                    const modelId = typeof model === 'string' ? model : model.id;
+                    const modelDesc = typeof model === 'string' ? 'OpenAI model' : model.description;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={modelId}
+                        style={[
+                          styles.modelOption,
+                          config.model === modelId && styles.modelOptionSelected
+                        ]}
+                        onPress={() => setConfig(prev => ({ ...prev, model: modelId }))}
+                      >
+                        <View style={styles.modelOptionContent}>
+                          <Text style={[
+                            styles.modelOptionText,
+                            config.model === modelId && styles.modelOptionTextSelected
+                          ]}>
+                            {modelId}
+                          </Text>
+                          {typeof model !== 'string' && 'capabilities' in model && model.capabilities && (
+                            <View style={styles.capabilityIcons}>
+                              {model.capabilities.vision && (
+                                <Ionicons name="eye" size={12} color={theme.colors.textSecondary} />
+                              )}
+                              {model.capabilities.reasoning && (
+                                <Ionicons name="bulb" size={12} color={theme.colors.textSecondary} />
+                              )}
+                              {model.capabilities.function_calling && (
+                                <Ionicons name="code" size={12} color={theme.colors.textSecondary} />
+                              )}
+                            </View>
+                          )}
+                          <Text style={styles.modelDescription}>
+                            {modelDesc}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  });
+                })()}
+              </View>
+            </>
+          )}
         </View>
 
         <View style={styles.section}>

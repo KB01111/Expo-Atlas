@@ -1,8 +1,9 @@
-import { Agent } from '@openai/agents';
+// import { Agent } from '@openai/agents';
 import OpenAI from 'openai';
 import { OpenAIAgent, OpenAIAgentConfig, OpenAIAgentExecution, OpenAIAgentMessage } from '../types/openai';
 import { supabaseService } from './supabase';
 import { Agent as DatabaseAgent } from '../types';
+import { openaiModelsService } from './openaiModels';
 
 class OpenAIAgentsService {
   private openai: OpenAI;
@@ -51,6 +52,7 @@ class OpenAIAgentsService {
 
       // Create database record for the agent
       const databaseAgent: Omit<DatabaseAgent, 'id' | 'created_at' | 'updated_at' | 'tasks' | 'successRate'> = {
+        user_id: config.user_id || 'current_user', // Ensure user_id is provided
         name: config.name,
         description: config.description,
         status: 'active',
@@ -67,7 +69,10 @@ class OpenAIAgentsService {
         }
       };
 
-      const savedAgent = await supabaseService.createAgent(databaseAgent);
+      const savedAgent = await supabaseService.createAgent({
+        ...databaseAgent,
+        user_id: databaseAgent.user_id || 'current_user' // Ensure user_id is always string
+      });
       if (!savedAgent) {
         throw new Error('Failed to save agent to database');
       }
@@ -162,7 +167,7 @@ class OpenAIAgentsService {
         if (run.status === 'completed') {
           // Get messages
           const messages = await this.openai.beta.threads.messages.list(thread.id);
-          const assistantMessages = messages.data.filter(msg => msg.role === 'assistant');
+          const assistantMessages = messages.data.filter((msg: any) => msg.role === 'assistant');
           
           if (assistantMessages.length > 0) {
             const lastMessage = assistantMessages[0];
@@ -175,7 +180,7 @@ class OpenAIAgentsService {
 
           // Calculate tokens and cost (approximation)
           execution.tokensUsed = run.usage?.total_tokens || 0;
-          execution.cost = this.calculateCost(execution.tokensUsed, agent.model);
+          execution.cost = await this.calculateCost(execution.tokensUsed, agent.model);
           execution.status = 'completed';
         } else {
           execution.status = 'failed';
@@ -405,18 +410,35 @@ class OpenAIAgentsService {
     return this.executeAgent(agentId, input);
   }
 
-  private calculateCost(tokens: number, model: string): number {
-    // Pricing estimates (per 1K tokens) - update these with current OpenAI pricing
-    const pricing: Record<string, { input: number; output: number }> = {
+  private async calculateCost(tokens: number, model: string): Promise<number> {
+    try {
+      // Get latest pricing from models service
+      const models = await openaiModelsService.fetchAllModels();
+      const modelInfo = models.find(m => m.id === model);
+      
+      if (modelInfo?.pricing) {
+        const tokensInK = tokens / 1000;
+        // Simplified calculation - assuming equal input/output tokens
+        return (tokensInK * modelInfo.pricing.input_tokens_per_1k + tokensInK * modelInfo.pricing.output_tokens_per_1k) / 2;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch dynamic pricing, using fallback:', error);
+    }
+
+    // Fallback pricing if dynamic fetch fails
+    const fallbackPricing: Record<string, { input: number; output: number }> = {
+      'gpt-4.5': { input: 0.01, output: 0.03 },
+      'gpt-4.1': { input: 0.008, output: 0.025 },
       'gpt-4': { input: 0.03, output: 0.06 },
       'gpt-4-turbo': { input: 0.01, output: 0.03 },
       'gpt-3.5-turbo': { input: 0.0015, output: 0.002 },
       'gpt-4o': { input: 0.005, output: 0.015 },
-      'gpt-4o-mini': { input: 0.00015, output: 0.0006 }
+      'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
+      'o3-mini': { input: 0.02, output: 0.08 },
+      'o4-mini': { input: 0.015, output: 0.06 }
     };
 
-    const modelPricing = pricing[model] || pricing['gpt-4'];
-    // Simplified calculation - assuming equal input/output tokens
+    const modelPricing = fallbackPricing[model] || fallbackPricing['gpt-4'];
     const tokensInK = tokens / 1000;
     return (tokensInK * modelPricing.input + tokensInK * modelPricing.output) / 2;
   }
