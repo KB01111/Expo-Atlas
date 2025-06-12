@@ -50,6 +50,7 @@ A React Native mobile app built with Expo that mirrors the KB-Atlas web features
    - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`: Your Clerk publishable key
    - `EXPO_PUBLIC_SUPABASE_URL`: Your Supabase project URL
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+   - `SUPABASE_SERVICE_KEY`: Your Supabase service role key (used for migrations)
 
 3. **Setup Clerk Authentication**:
    - Create a Clerk account at [clerk.com](https://clerk.com)
@@ -144,6 +145,7 @@ npx expo prebuild
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk authentication key | Yes |
 | `EXPO_PUBLIC_SUPABASE_URL` | Supabase project URL | Yes |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key for migrations | Yes (scripts) |
 | `EXPO_PUBLIC_API_BASE_URL` | Backend API base URL | No |
 
 ## Features Overview

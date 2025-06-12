@@ -131,6 +131,54 @@ export const supabaseService = {
     }
   },
 
+  async getAgentById(agentId: string, provider?: string) {
+    try {
+      let query = supabase.from('agents').select('*').eq('id', agentId);
+      if (provider) {
+        query = query.eq('provider', provider);
+      }
+      const { data: agent, error } = await query.single();
+
+      if (error) throw error;
+
+      const { count: totalTasks } = await supabase
+        .from('executions')
+        .select('*', { count: 'exact', head: true })
+        .eq('agent_id', agentId);
+
+      const { count: completedTasks } = await supabase
+        .from('executions')
+        .select('*', { count: 'exact', head: true })
+        .eq('agent_id', agentId)
+        .eq('status', 'completed');
+
+      const successRate = totalTasks && totalTasks > 0
+        ? ((completedTasks || 0) / totalTasks) * 100
+        : 0;
+
+      return {
+        ...agent,
+        tasks: totalTasks || 0,
+        successRate: Math.round(successRate * 100) / 100,
+      };
+    } catch (error) {
+      console.error('Error fetching agent:', error);
+      return null;
+    }
+  },
+
+  async getAgentCount() {
+    try {
+      const { count } = await supabase
+        .from('agents')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    } catch (error) {
+      console.error('Error fetching agent count:', error);
+      return 0;
+    }
+  },
+
   async getWorkflows() {
     try {
       const { data: workflows, error } = await supabase
