@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Card, Button, Modal } from '../../components/ui';
 import { MotiView } from '../../components/animations';
 import { createSharedStyles } from '../../styles/shared';
@@ -43,6 +44,7 @@ interface AgentBuilderScreenProps {
 
 const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigation }) => {
   const { theme } = useTheme();
+  const { userId, user } = useAuth();
   const styles = createStyles(theme);
   const sharedStyles = createSharedStyles(theme);
 
@@ -124,14 +126,16 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
           throw new Error('Builder session not found');
         }
       } else if (route?.params?.templateId) {
+        if (!userId) throw new Error('User not authenticated');
         // Load from template
-        id = await agentBuilderService.loadTemplate(route.params.templateId, 'current_user'); // TODO: Get from auth
+        id = await agentBuilderService.loadTemplate(route.params.templateId, userId);
         const templateState = await agentBuilderService.getBuilderState(id);
         if (!templateState) throw new Error('Failed to load template');
         state = templateState;
       } else {
+        if (!userId) throw new Error('User not authenticated');
         // Initialize new builder
-        const result = await agentBuilderService.initializeBuilder('current_user'); // TODO: Get from auth
+        const result = await agentBuilderService.initializeBuilder(userId);
         state = result.state;
         id = result.builderId;
       }

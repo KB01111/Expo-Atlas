@@ -53,7 +53,7 @@ class OpenAIAgentsService {
 
       // Create database record for the agent
       const databaseAgent: Omit<DatabaseAgent, 'id' | 'created_at' | 'updated_at' | 'tasks' | 'successRate'> = {
-        user_id: config.user_id || 'current_user', // Ensure user_id is provided
+        user_id: config.user_id,
         name: config.name,
         description: config.description,
         status: 'active',
@@ -70,10 +70,7 @@ class OpenAIAgentsService {
         }
       };
 
-      const savedAgent = await supabaseService.createAgent({
-        ...databaseAgent,
-        user_id: databaseAgent.user_id || 'current_user' // Ensure user_id is always string
-      });
+      const savedAgent = await supabaseService.createAgent(databaseAgent);
       if (!savedAgent) {
         throw new Error('Failed to save agent to database');
       }
