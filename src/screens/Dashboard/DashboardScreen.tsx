@@ -21,7 +21,7 @@ if (Platform.OS === 'web') {
   LineChart = WebChart;
   BarChart = WebChart;
 } else {
-  const ChartKit = require('react-native-chart-kit');
+  const ChartKit = require('react-native-chart-kit-chz');
   LineChart = ChartKit.LineChart;
   BarChart = ChartKit.BarChart;
 }

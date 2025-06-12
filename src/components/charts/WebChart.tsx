@@ -29,7 +29,7 @@ const WebChart: React.FC<WebChartProps> = ({ title, width: chartWidth, height = 
         {title || 'Chart'} (Web Preview)
       </Text>
       <Text style={{ color: theme.colors.textSecondary, fontSize: 12, marginTop: 8 }}>
-        Charts will be rendered with react-native-chart-kit in native apps
+        Charts will be rendered with react-native-chart-kit-chz in native apps
       </Text>
     </View>
   );

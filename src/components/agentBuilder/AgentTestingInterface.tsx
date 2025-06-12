@@ -507,6 +507,7 @@ const AgentTestingInterface: React.FC<AgentTestingInterfaceProps> = ({
       </Text>
 
       {testMetrics ? (
+        <>
         <View style={styles.metricsGrid}>
           <Card style={styles.metricCard}>
             <LinearGradient
@@ -573,20 +574,21 @@ const AgentTestingInterface: React.FC<AgentTestingInterfaceProps> = ({
           <Text style={styles.metricValue}>{testMetrics.failed_tests}</Text>
           <Text style={styles.metricLabel}>Failed Tests</Text>
         </Card>
-      </View>
-
-      {testMetrics.common_failures.length > 0 && (
-        <View style={styles.failuresSection}>
-          <Text style={styles.failureTitle}>Common Failures</Text>
-          {testMetrics.common_failures.map((f, idx) => (
-            <View key={idx} style={styles.failureItem}>
-              <Ionicons name="close-circle" size={16} color={theme.colors.error} />
-              <Text style={styles.failureText}>{f.message} ({f.count})</Text>
-            </View>
-          ))}
         </View>
-      )}
-    ) : (
+
+        {testMetrics.common_failures.length > 0 && (
+          <View style={styles.failuresSection}>
+            <Text style={styles.failureTitle}>Common Failures</Text>
+            {testMetrics.common_failures.map((f, idx) => (
+              <View key={idx} style={styles.failureItem}>
+                <Ionicons name="close-circle" size={16} color={theme.colors.error} />
+                <Text style={styles.failureText}>{f.message} ({f.count})</Text>
+              </View>
+            ))}
+          </View>
+        )}
+        </>
+      ) : (
       <View style={styles.noMetricsContainer}>
         <Ionicons name="analytics-outline" size={64} color={theme.colors.textSecondary} />
         <Text style={styles.noMetricsTitle}>No Metrics Yet</Text>

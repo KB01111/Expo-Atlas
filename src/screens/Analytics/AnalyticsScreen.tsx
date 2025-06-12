@@ -14,7 +14,7 @@ if (Platform.OS === 'web') {
   const WebChart = require('../../components/charts/WebChart').default;
   PieChart = WebChart;
 } else {
-  const ChartKit = require('react-native-chart-kit');
+  const ChartKit = require('react-native-chart-kit-chz');
   PieChart = ChartKit.PieChart;
 }
 
