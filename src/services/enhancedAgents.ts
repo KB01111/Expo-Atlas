@@ -729,13 +729,37 @@ class EnhancedAgentsService {
       });
     });
 
-    return Object.values(agentStats).map(stats => ({
-      agent_id: stats.agent_id,
-      execution_count: stats.execution_count,
-      average_response_time_ms: stats.execution_count > 0 ? stats.total_time / stats.execution_count : 0,
-      success_rate: stats.execution_count > 0 ? stats.successful_count / stats.execution_count : 0,
-      collaboration_score: Math.random() * 100 // TODO: Implement proper collaboration scoring
-    }));
+    const totalSteps = Object.values(agentStats).reduce((sum, s) => sum + s.execution_count, 0);
+    const maxAvgResponse = Math.max(
+      ...Object.values(agentStats).map(s =>
+        s.execution_count > 0 ? s.total_time / s.execution_count : 0
+      )
+    );
+
+    return Object.values(agentStats).map(stats => {
+      const avgResponse =
+        stats.execution_count > 0 ? stats.total_time / stats.execution_count : 0;
+      const successRate =
+        stats.execution_count > 0 ? stats.successful_count / stats.execution_count : 0;
+      const contribution = totalSteps > 0 ? stats.execution_count / totalSteps : 0;
+      const normalizedResponse =
+        maxAvgResponse > 0 ? avgResponse / maxAvgResponse : 0;
+
+      // Collaboration score takes into account how reliable and quick the agent
+      // is, as well as how often it contributes to the workflow. The score is
+      // scaled to a 0-100 range for easier interpretation.
+      const collaboration =
+        (successRate * 0.5 + (1 - normalizedResponse) * 0.3 + contribution * 0.2) *
+        100;
+
+      return {
+        agent_id: stats.agent_id,
+        execution_count: stats.execution_count,
+        average_response_time_ms: avgResponse,
+        success_rate: successRate,
+        collaboration_score: collaboration,
+      };
+    });
   }
 
   /**
@@ -744,10 +768,20 @@ class EnhancedAgentsService {
   private calculateCollaborationScore(agentActivities: AgentActivity[]): number {
     if (agentActivities.length === 0) return 0;
     
-    const avgSuccessRate = agentActivities.reduce((sum, activity) => sum + activity.success_rate, 0) / agentActivities.length;
-    const avgCollaborationScore = agentActivities.reduce((sum, activity) => sum + activity.collaboration_score, 0) / agentActivities.length;
-    
-    return (avgSuccessRate * 0.6 + avgCollaborationScore * 0.4) * 100;
+    const totalExecutions = agentActivities.reduce(
+      (sum, activity) => sum + activity.execution_count,
+      0
+    );
+    if (totalExecutions === 0) return 0;
+
+    // Weighted average based on how many steps each agent executed so the final
+    // score reflects overall team performance.
+    const weightedScore = agentActivities.reduce((sum, activity) => {
+      const weight = activity.execution_count / totalExecutions;
+      return sum + activity.collaboration_score * weight;
+    }, 0);
+
+    return weightedScore;
   }
 
   // ========================================

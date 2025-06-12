@@ -178,6 +178,23 @@ npx expo prebuild
 - Cost analysis
 - System health monitoring
 
+### Agent Collaboration Metrics
+The application computes a **collaboration score** for each agent based on:
+
+1. **Step success rate** – how often an agent's steps succeed
+2. **Average response time** – how quickly the agent completes a step
+3. **Contribution to workflow steps** – the proportion of steps performed by the agent
+
+Each factor is weighted (`success 50%`, `response time 30%`, `contribution 20%`) to
+produce a 0‑100 score:
+
+```
+score = (successRate * 0.5 + (1 - normalizedResponseTime) * 0.3 + contribution * 0.2) * 100
+```
+
+Team collaboration efficiency is then the weighted average of all agent scores
+based on their executed steps.
+
 ## Contributing
 
 1. Fork the repository
