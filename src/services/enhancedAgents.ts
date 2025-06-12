@@ -628,6 +628,20 @@ class EnhancedAgentsService {
       const totalCost = executions.reduce((sum, e) => sum + (e.cost || 0), 0);
       const totalTime = executions.reduce((sum, e) => sum + (e.execution_time_ms || 0), 0);
 
+      const toolCounts: Record<string, number> = {};
+      executions.forEach(e => {
+        const tools = e.metadata?.tools_used as string[] | undefined;
+        if (Array.isArray(tools)) {
+          tools.forEach(t => {
+            toolCounts[t] = (toolCounts[t] || 0) + 1;
+          });
+        }
+      });
+
+      const mostUsedTools = Object.entries(toolCounts)
+        .map(([tool, count]) => ({ tool, count }))
+        .sort((a, b) => b.count - a.count);
+
       return {
         agent_id: agentId,
         time_period: timePeriod,
@@ -638,7 +652,7 @@ class EnhancedAgentsService {
         total_tokens_used: totalTokens,
         total_cost: totalCost,
         average_cost_per_execution: totalExecutions > 0 ? totalCost / totalExecutions : 0,
-        most_used_tools: [], // TODO: Implement tool usage tracking
+        most_used_tools: mostUsedTools,
         error_rate: totalExecutions > 0 ? failedExecutions / totalExecutions : 0
       };
     } catch (error) {

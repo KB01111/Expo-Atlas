@@ -225,7 +225,7 @@ export interface AgentPerformanceMetrics {
   total_tokens_used: number;
   total_cost: number;
   average_cost_per_execution: number;
-  most_used_tools: string[];
+  most_used_tools: Array<{ tool: string; count: number }>;
   error_rate: number;
   user_satisfaction_score?: number;
 }
