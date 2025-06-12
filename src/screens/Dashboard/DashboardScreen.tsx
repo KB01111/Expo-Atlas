@@ -21,10 +21,15 @@ if (Platform.OS === 'web') {
   LineChart = WebChart;
   BarChart = WebChart;
 } else {
-  const ChartKit = require('react-native-chart-kit');
-  LineChart = ChartKit.LineChart;
-  BarChart = ChartKit.BarChart;
-}
+import { Platform } from 'react-native';
+import { LineChart as NativeLineChart, BarChart as NativeBarChart } from 'react-native-chart-kit-chz';
+
+const LineChart = Platform.OS === 'web'
+  ? require('../../components/charts/WebChart').default
+  : NativeLineChart;
+const BarChart = Platform.OS === 'web'
+  ? require('../../components/charts/WebChart').default
+  : NativeBarChart;
 import { supabaseService } from '../../services/supabase';
 import { DashboardMetrics, AppTheme } from '../../types';
 

@@ -42,7 +42,7 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 - Database: `@supabase/supabase-js`
 - OpenAI Agents: `@openai/agents` for AI agent creation and execution
 - Navigation: `@react-navigation/*` (stack, bottom-tabs, drawer)
-- Charts: `react-native-chart-kit`, `victory-native`
+- Charts: `react-native-chart-kit-chz`, `victory-native`
 - UI: `@expo/vector-icons`, `react-native-vector-icons`
 - Animations: `react-native-reanimated`, `react-native-gesture-handler`, `moti`, `lottie-react-native`
 
