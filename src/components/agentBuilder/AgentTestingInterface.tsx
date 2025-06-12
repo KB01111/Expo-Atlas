@@ -149,6 +149,7 @@ const AgentTestingInterface: React.FC<AgentTestingInterfaceProps> = ({
       },
       status: 'running',
       created_at: new Date().toISOString(),
+      error: undefined,
     };
 
     setCurrentConversation(newConversation);
@@ -214,6 +215,7 @@ const AgentTestingInterface: React.FC<AgentTestingInterfaceProps> = ({
             messages: testConversation.messages,
             metrics: testConversation.metrics,
             status: testConversation.status,
+            error: testConversation.error,
           });
         }
 
@@ -562,21 +564,33 @@ const AgentTestingInterface: React.FC<AgentTestingInterfaceProps> = ({
             <Text style={styles.metricLabel}>Total Tokens</Text>
           </Card>
 
-          <Card style={styles.metricCard}>
-            <LinearGradient
-              colors={[theme.colors.error + '20', theme.colors.error + '10']}
-              style={styles.metricGradient}
-            />
-            <Ionicons name="warning" size={24} color={theme.colors.error} />
-            <Text style={styles.metricValue}>{testMetrics.failed_tests}</Text>
-            <Text style={styles.metricLabel}>Failed Tests</Text>
-          </Card>
+        <Card style={styles.metricCard}>
+          <LinearGradient
+            colors={[theme.colors.error + '20', theme.colors.error + '10']}
+            style={styles.metricGradient}
+          />
+          <Ionicons name="warning" size={24} color={theme.colors.error} />
+          <Text style={styles.metricValue}>{testMetrics.failed_tests}</Text>
+          <Text style={styles.metricLabel}>Failed Tests</Text>
+        </Card>
+      </View>
+
+      {testMetrics.common_failures.length > 0 && (
+        <View style={styles.failuresSection}>
+          <Text style={styles.failureTitle}>Common Failures</Text>
+          {testMetrics.common_failures.map((f, idx) => (
+            <View key={idx} style={styles.failureItem}>
+              <Ionicons name="close-circle" size={16} color={theme.colors.error} />
+              <Text style={styles.failureText}>{f.message} ({f.count})</Text>
+            </View>
+          ))}
         </View>
-      ) : (
-        <View style={styles.noMetricsContainer}>
-          <Ionicons name="analytics-outline" size={64} color={theme.colors.textSecondary} />
-          <Text style={styles.noMetricsTitle}>No Metrics Yet</Text>
-          <Text style={styles.noMetricsDescription}>
+      )}
+    ) : (
+      <View style={styles.noMetricsContainer}>
+        <Ionicons name="analytics-outline" size={64} color={theme.colors.textSecondary} />
+        <Text style={styles.noMetricsTitle}>No Metrics Yet</Text>
+        <Text style={styles.noMetricsDescription}>
             Run some tests to see performance metrics
           </Text>
         </View>
@@ -1041,6 +1055,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 16,
     color: theme.colors.textSecondary,
     textAlign: 'center',
+  },
+  failuresSection: {
+    marginTop: 16,
+    gap: 4,
+  },
+  failureTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  failureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  failureText: {
+    fontSize: 14,
+    color: theme.colors.error,
   },
   historySection: {
     marginTop: 24,
