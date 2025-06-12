@@ -7,7 +7,7 @@ const tests = [
   'test-marketplace-deployment.js',
   'test-agent-execution.js',
   'test-sdk-integration.js',
-  'test_database.js',
+  'test-database.js',
   'test-agent-builder.js'
 ];
 
