@@ -16,6 +16,7 @@ export interface OpenAIAgentTool {
 }
 
 export interface OpenAIAgentConfig {
+  user_id: string;
   name: string;
   description?: string;
   model?: string;

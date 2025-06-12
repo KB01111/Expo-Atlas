@@ -847,6 +847,7 @@ class AgentBuilderService {
       category: string;
       tags: string[];
       isPublic: boolean;
+      creatorName: string;
     }
   ): Promise<AgentTemplate> {
     const state = await this.getBuilderState(builderId);
@@ -861,7 +862,7 @@ class AgentBuilderService {
       popularity_score: 0,
       created_by: {
         id: state.config.metadata.created_by,
-        name: 'User', // TODO: Get from auth context
+        name: templateData.creatorName,
       },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
