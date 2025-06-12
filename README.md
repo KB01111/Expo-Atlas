@@ -178,6 +178,17 @@ npx expo prebuild
 - Cost analysis
 - System health monitoring
 
+## Testing
+
+Run linting and the full test suite with:
+
+```bash
+npm install
+npm run lint
+npm test
+```
+
+
 ## Contributing
 
 1. Fork the repository
