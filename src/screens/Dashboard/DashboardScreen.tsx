@@ -125,9 +125,13 @@ const DashboardScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  console.log('DashboardScreen: Component is rendering', { loading, metrics: !!metrics });
+
   const loadMetrics = async () => {
     try {
+      console.log('DashboardScreen: Loading metrics...');
       const data = await supabaseService.getDashboardMetrics();
+      console.log('DashboardScreen: Metrics loaded:', data);
       setMetrics(data);
     } catch (error) {
       console.error('Error loading metrics:', error);
@@ -186,6 +190,15 @@ const DashboardScreen: React.FC = () => {
         <Text style={[sharedStyles.body, { textAlign: 'center', color: theme.colors.text }]}>
           Loading dashboard...
         </Text>
+        {/* Fallback UI for debugging */}
+        <View style={{ marginTop: 20, padding: 20 }}>
+          <Text style={{ color: theme.colors.text, fontSize: 16, marginBottom: 10 }}>
+            Debug Info:
+          </Text>
+          <Text style={{ color: theme.colors.text }}>Loading: {loading.toString()}</Text>
+          <Text style={{ color: theme.colors.text }}>Has Metrics: {(!!metrics).toString()}</Text>
+          <Text style={{ color: theme.colors.text }}>Platform: {Platform.OS}</Text>
+        </View>
       </View>
     );
   }

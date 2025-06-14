@@ -63,13 +63,48 @@ This is an Expo React Native app that mirrors KB-Atlas web features for mobile. 
 **OpenAI Agents Integration:**
 - Full support for OpenAI Agents SDK (`@openai/agents@0.0.4`) with official OpenAI SDK (`openai@5.1.1`)
 - Service layer at `src/services/openaiAgentsSimple.ts` using actual OpenAI Assistants API
+- **Dynamic Model Management** at `src/services/openaiModels.ts` with automatic OpenAI API fetching
 - Complete type definitions in `src/types/openai.ts` aligned with OpenAI SDK types
 - UI components for agent management, execution, and configuration in `src/components/openai/`
 - Template-based agent creation with predefined roles (assistant, coder, researcher, analyst)
 - Real assistant execution using OpenAI Threads and Runs API with proper cleanup
 - Tool integration including code interpreter, file search, and custom functions
-- Automatic cost calculation and token usage tracking
-- Proper error handling and database persistence integration
+- **Automatic cost calculation with dynamic pricing** and token usage tracking
+- **Latest Model Support**: GPT-4.5, GPT-4.1, o3, o4-mini, and future models automatically available
+- Categorized model selection with capability indicators (vision, reasoning, function calling)
+- Proper error handling with fallback models and database persistence integration
+
+**Agent Builder System:**
+- Comprehensive agent builder at `src/screens/Agents/AgentBuilderScreen.tsx` with 7-step wizard interface
+- Full-featured builder service at `src/services/agentBuilder.ts` with OpenAI SDK integration and Supabase persistence
+- Multi-step configuration: Basic Info, Instructions, Tools, Files, Advanced, Test, Deploy
+- Real-time testing interface with performance metrics and conversation history
+- Custom function creation with API call, JavaScript, and external execution types
+- File upload and vector store management for knowledge bases
+- Template system for agent reuse and sharing
+- Export/import functionality for agent configurations
+- Complete database schema with agent builder states, files, functions, tests, and deployments
+- Navigation integration via "Builder" button in AgentsScreen header
+
+**MCP (Model Context Protocol) Integration:**
+- Full Composio MCP SDK integration at `src/services/composioMCP.ts` for external tool access
+- MCP server discovery and connection management with real-time status monitoring
+- Support for popular MCP servers: filesystem, web search, Gmail, Google Calendar, GitHub, Slack
+- Tool execution with cost tracking, rate limiting, and comprehensive logging
+- Agent-specific tool connections with authentication and configuration management
+- UI integration via `src/components/mcp/MCPToolsPanel.tsx` in Agent Builder tools step
+- Complete database schema with MCP servers, tools, connections, and execution analytics
+
+**AI Agent Templates & Marketplace:**
+- Comprehensive template library at `src/services/agentTemplates.ts` with 6 categories
+- One-click agent deployment system with pre-configured templates
+- Agent Marketplace at `src/screens/Agents/AgentMarketplaceScreen.tsx` with category browsing
+- 12+ pre-built agent templates: Smart Assistant, Email Manager, Sales Analyst, Code Reviewer, Research Analyst, Content Creator, Support Specialist
+- Template analytics with usage tracking, ratings, and popularity scoring
+- Template categories: Productivity, Business, Development, Research, Creative, Customer Support
+- Featured agents showcase with difficulty levels and setup time estimates
+- Template search and filtering with automatic MCP tool integration
+- Navigation integration via "Marketplace" button in AgentsScreen header
 
 **Animation System:**
 - Comprehensive animation foundation using React Native Reanimated 3 + Gesture Handler

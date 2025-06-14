@@ -13,7 +13,7 @@ import {
   OpenAIAgentConfig, 
   OpenAIAgentExecution, 
   OpenAIAgentMessage,
-  OpenAITool 
+  OpenAIAgentTool 
 } from '../types/openai';
 import { supabaseService } from './supabase';
 
@@ -26,7 +26,7 @@ interface AgentSDKConfig {
 }
 
 class OpenAIAgentsSDKService {
-  private openai: OpenAI;
+  private openai!: OpenAI;
   private config: AgentSDKConfig;
   private isConfigured: boolean = false;
 
@@ -155,7 +155,7 @@ class OpenAIAgentsSDKService {
     description?: string;
     instructions: string;
     model: string;
-    tools?: OpenAITool[];
+    tools?: OpenAIAgentTool[];
     fileIds?: string[];
     metadata?: Record<string, any>;
   }): Promise<{
@@ -164,7 +164,7 @@ class OpenAIAgentsSDKService {
     description?: string;
     instructions: string;
     model: string;
-    tools: OpenAITool[];
+    tools: OpenAIAgentTool[];
     metadata: Record<string, any>;
   }> {
     if (!this.isConfigured) {
@@ -177,10 +177,19 @@ class OpenAIAgentsSDKService {
         description: config.description,
         instructions: config.instructions,
         model: config.model,
-        tools: config.tools?.map(tool => ({
-          type: tool.type,
-          ...(tool.type === 'function' && tool.function ? { function: tool.function } : {})
-        })) || [],
+        tools: config.tools?.map(tool => {
+          if (tool.type === 'function' && tool.function) {
+            return {
+              type: 'function' as const,
+              function: tool.function
+            };
+          } else if (tool.type === 'code_interpreter') {
+            return { type: 'code_interpreter' as const };
+          } else if (tool.type === 'file_search') {
+            return { type: 'file_search' as const };
+          }
+          throw new Error(`Invalid tool type: ${tool.type}`);
+        }) || [],
         metadata: config.metadata || {}
       });
 

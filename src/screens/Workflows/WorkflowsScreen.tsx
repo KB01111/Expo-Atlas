@@ -174,7 +174,7 @@ const WorkflowsScreen: React.FC = () => {
         edges
       };
 
-      let result;
+      let result: any;
       if (selectedWorkflow) {
         result = await supabaseService.updateWorkflow(selectedWorkflow.id, workflowData);
         if (result) {

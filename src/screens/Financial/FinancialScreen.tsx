@@ -254,28 +254,25 @@ const FinancialScreen: React.FC = () => {
           <View style={styles.statItem}>
             {item.status === 'running' ? (
               <Button 
+                title="Stop"
                 variant="minimal" 
                 size="xs" 
                 onPress={() => handleStopExecution(item.id)}
-              >
-                Stop
-              </Button>
+              />
             ) : item.status === 'failed' ? (
               <Button 
+                title="Retry"
                 variant="minimal" 
                 size="xs" 
                 onPress={() => handleRetryExecution(item.id)}
-              >
-                Retry
-              </Button>
+              />
             ) : (
               <Button 
+                title="View"
                 variant="minimal" 
                 size="xs" 
                 onPress={() => handleViewExecution(item.id)}
-              >
-                View
-              </Button>
+              />
             )}
           </View>
         </View>

@@ -76,7 +76,12 @@ const AgentModal: React.FC<AgentModalProps> = ({
       if (agent) {
         result = await supabaseService.updateAgent(agent.id, formData);
       } else {
-        result = await supabaseService.createAgent(formData);
+        // Add user_id for new agent creation
+        const agentData = {
+          ...formData,
+          user_id: 'current_user' // TODO: Get from auth context
+        };
+        result = await supabaseService.createAgent(agentData);
       }
 
       if (result) {
@@ -160,7 +165,7 @@ const AgentModal: React.FC<AgentModalProps> = ({
           ]}>
             <Picker
               selectedValue={formData.provider}
-              onValueChange={(value) => setFormData({ 
+              onValueChange={(value: string) => setFormData({ 
                 ...formData, 
                 provider: value,
                 model: models[value as keyof typeof models][0]
@@ -188,7 +193,7 @@ const AgentModal: React.FC<AgentModalProps> = ({
           ]}>
             <Picker
               selectedValue={formData.model}
-              onValueChange={(value) => setFormData({ ...formData, model: value })}
+              onValueChange={(value: string) => setFormData({ ...formData, model: value })}
               style={{ color: theme.colors.text }}
             >
               {models[formData.provider as keyof typeof models]?.map((model) => (
@@ -212,7 +217,7 @@ const AgentModal: React.FC<AgentModalProps> = ({
           ]}>
             <Picker
               selectedValue={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value })}
+              onValueChange={(value: string) => setFormData({ ...formData, status: value as 'active' | 'inactive' | 'error' })}
               style={{ color: theme.colors.text }}
             >
               <Picker.Item label="Active" value="active" />

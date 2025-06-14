@@ -1,0 +1,728 @@
+import { Platform } from 'react-native';
+
+// Mock implementations for all platforms initially
+class MockClient { 
+  constructor() { 
+    if (Platform.OS !== 'web') {
+      console.warn('MCP Client not available'); 
+    }
+  }
+  async connect() { 
+    throw new Error('MCP not supported on this platform'); 
+  }
+}
+
+class MockSSETransport { 
+  constructor() { 
+    if (Platform.OS !== 'web') {
+      console.warn('MCP SSE Transport not available'); 
+    }
+  } 
+}
+
+class MockStdioTransport { 
+  constructor() { 
+    if (Platform.OS !== 'web') {
+      console.warn('MCP Stdio Transport not available'); 
+    }
+  } 
+}
+
+// Initialize with mock implementations
+let Client: any = MockClient;
+let SSEClientTransport: any = MockSSETransport;
+let StdioClientTransport: any = MockStdioTransport;
+
+// Only attempt to load real MCP SDK on native platforms at runtime
+if (Platform.OS !== 'web') {
+  // Use dynamic import in a way that doesn't affect bundling
+  Promise.resolve().then(() => {
+    try {
+      const clientModule = eval('require')('@modelcontextprotocol/sdk/client/index.js');
+      const sseModule = eval('require')('@modelcontextprotocol/sdk/client/sse.js');
+      const stdioModule = eval('require')('@modelcontextprotocol/sdk/client/stdio.js');
+      
+      Client = clientModule.Client;
+      SSEClientTransport = sseModule.SSEClientTransport;
+      StdioClientTransport = stdioModule.StdioClientTransport;
+      
+      console.log('MCP SDK loaded successfully');
+    } catch (error) {
+      console.warn('MCP SDK not available:', (error as Error).message);
+    }
+  });
+} else {
+  console.info('MCP SDK disabled for web platform');
+}
+import { supabaseService } from './supabase';
+
+export interface MCPServer {
+  id: string;
+  name: string;
+  description: string;
+  endpoint: string;
+  transport_type: 'sse' | 'stdio' | 'websocket';
+  status: 'connected' | 'disconnected' | 'error' | 'connecting';
+  capabilities: string[];
+  tools: MCPTool[];
+  authentication?: MCPAuthentication;
+  metadata: {
+    version: string;
+    provider: string;
+    category: string;
+    last_connected: string;
+    error_message?: string;
+  };
+}
+
+export interface MCPTool {
+  id: string;
+  name: string;
+  description: string;
+  server_id: string;
+  schema: {
+    type: 'object';
+    properties: Record<string, {
+      type: string;
+      description: string;
+      enum?: string[];
+      required?: boolean;
+    }>;
+    required: string[];
+  };
+  capabilities: ('read' | 'write' | 'execute' | 'realtime')[];
+  usage_cost: number;
+  rate_limits: {
+    requests_per_minute: number;
+    requests_per_day: number;
+  };
+}
+
+export interface MCPAuthentication {
+  type: 'none' | 'api_key' | 'oauth' | 'bearer';
+  credentials?: Record<string, string>;
+  oauth_config?: {
+    client_id: string;
+    client_secret: string;
+    authorization_url: string;
+    token_url: string;
+    scopes: string[];
+  };
+}
+
+export interface MCPConnection {
+  server_id: string;
+  agent_id: string;
+  enabled: boolean;
+  configuration: Record<string, any>;
+  authentication: MCPAuthentication;
+  created_at: string;
+  last_used: string;
+}
+
+export interface MCPExecution {
+  id: string;
+  tool_id: string;
+  server_id: string;
+  agent_id: string;
+  parameters: Record<string, any>;
+  result?: any;
+  error?: string;
+  execution_time_ms: number;
+  cost: number;
+  status: 'success' | 'error' | 'timeout';
+  timestamp: string;
+  metadata: {
+    request_id: string;
+    user_id?: string;
+    session_id?: string;
+  };
+}
+
+class MCPProtocolService {
+  private clients: Map<string, any> = new Map();
+  private transports: Map<string, any> = new Map();
+  private connectionPromises: Map<string, Promise<void>> = new Map();
+  private rateLimiters: Map<string, { requests: number; resetTime: number }> = new Map();
+
+  // ========================================
+  // SERVER DISCOVERY & CONNECTION
+  // ========================================
+
+  /**
+   * Discover available MCP servers
+   */
+  async discoverServers(): Promise<MCPServer[]> {
+    const servers: MCPServer[] = [];
+
+    // Add popular MCP servers
+    servers.push(...this.getPopularMCPServers());
+    
+    // Add user's custom servers
+    const customServers = await this.getUserCustomServers();
+    servers.push(...customServers);
+
+    return servers;
+  }
+
+  /**
+   * Connect to MCP server with real protocol implementation
+   */
+  async connectToServer(
+    serverId: string,
+    endpoint: string,
+    transportType: 'sse' | 'stdio' | 'websocket' = 'sse',
+    authentication?: MCPAuthentication
+  ): Promise<MCPServer> {
+    // Check if already connecting
+    const existingPromise = this.connectionPromises.get(serverId);
+    if (existingPromise) {
+      await existingPromise;
+      return this.getConnectedServer(serverId)!;
+    }
+
+    const connectionPromise = this.performConnection(serverId, endpoint, transportType, authentication);
+    this.connectionPromises.set(serverId, connectionPromise);
+
+    try {
+      await connectionPromise;
+      return this.getConnectedServer(serverId)!;
+    } finally {
+      this.connectionPromises.delete(serverId);
+    }
+  }
+
+  /**
+   * Perform actual connection to MCP server
+   */
+  private async performConnection(
+    serverId: string,
+    endpoint: string,
+    transportType: 'sse' | 'stdio' | 'websocket',
+    authentication?: MCPAuthentication
+  ): Promise<void> {
+    try {
+      // Create appropriate transport
+      let transport: any;
+      
+      switch (transportType) {
+        case 'sse':
+          transport = new SSEClientTransport(new URL(endpoint));
+          break;
+        case 'stdio':
+          // For stdio, endpoint would be a command
+          transport = new StdioClientTransport({
+            command: endpoint,
+            args: []
+          });
+          break;
+        case 'websocket':
+          // WebSocket transport implementation would go here
+          throw new Error('WebSocket transport not yet implemented');
+        default:
+          throw new Error(`Unsupported transport type: ${transportType}`);
+      }
+
+      // Create MCP client
+      const client = new Client({
+        name: 'expo-atlas-mobile',
+        version: '1.0.0'
+      }, {
+        capabilities: {
+          tools: {},
+          prompts: {},
+          resources: {}
+        }
+      });
+
+      // Connect with authentication
+      if (authentication && authentication.type !== 'none') {
+        // Add authentication headers to transport
+        await this.addAuthenticationToTransport(transport, authentication);
+      }
+
+      await client.connect(transport);
+
+      // Store client and transport
+      this.clients.set(serverId, client);
+      this.transports.set(serverId, transport);
+
+      // List available tools
+      const toolsResult = await client.listTools();
+      const tools: MCPTool[] = toolsResult.tools.map((tool: any) => ({
+        id: tool.name,
+        name: tool.name,
+        description: tool.description || '',
+        server_id: serverId,
+        schema: tool.inputSchema as any,
+        capabilities: ['execute'],
+        usage_cost: 0.001, // Default cost
+        rate_limits: {
+          requests_per_minute: 60,
+          requests_per_day: 1000
+        }
+      }));
+
+      // Create server object
+      const server: MCPServer = {
+        id: serverId,
+        name: serverId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        description: `MCP server at ${endpoint}`,
+        endpoint,
+        transport_type: transportType,
+        status: 'connected',
+        capabilities: this.getServerCapabilities(client),
+        tools,
+        authentication,
+        metadata: {
+          version: '1.0.0',
+          provider: 'mcp',
+          category: 'external',
+          last_connected: new Date().toISOString()
+        }
+      };
+
+      // Save to database
+      await supabaseService.saveMCPServer(server);
+
+      console.log(`Connected to MCP server: ${serverId}`);
+    } catch (error) {
+      console.error(`Failed to connect to MCP server ${serverId}:`, error);
+      
+      // Save error status
+      const errorServer: MCPServer = {
+        id: serverId,
+        name: serverId,
+        description: `Failed to connect to ${endpoint}`,
+        endpoint,
+        transport_type: transportType,
+        status: 'error',
+        capabilities: [],
+        tools: [],
+        metadata: {
+          version: '1.0.0',
+          provider: 'mcp',
+          category: 'external',
+          last_connected: new Date().toISOString(),
+          error_message: error instanceof Error ? error.message : 'Unknown error'
+        }
+      };
+
+      await supabaseService.saveMCPServer(errorServer);
+      throw error;
+    }
+  }
+
+  /**
+   * Disconnect from MCP server
+   */
+  async disconnectFromServer(serverId: string): Promise<void> {
+    try {
+      const client = this.clients.get(serverId);
+      const transport = this.transports.get(serverId);
+
+      if (client && transport) {
+        await client.close();
+        this.clients.delete(serverId);
+        this.transports.delete(serverId);
+      }
+
+      // Update database status
+      await supabaseService.updateMCPServerStatus(serverId, 'disconnected');
+      
+      console.log(`Disconnected from MCP server: ${serverId}`);
+    } catch (error) {
+      console.error(`Error disconnecting from MCP server ${serverId}:`, error);
+    }
+  }
+
+  // ========================================
+  // TOOL EXECUTION
+  // ========================================
+
+  /**
+   * Execute MCP tool with rate limiting and error handling
+   */
+  async executeTool(
+    toolId: string,
+    serverId: string,
+    parameters: Record<string, any>,
+    metadata: {
+      agent_id?: string;
+      user_id?: string;
+      session_id?: string;
+    } = {}
+  ): Promise<MCPExecution> {
+    const startTime = Date.now();
+    const executionId = `mcp_exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    try {
+      // Check rate limits
+      await this.checkRateLimit(serverId, toolId);
+
+      // Get client
+      const client = this.clients.get(serverId);
+      if (!client) {
+        throw new Error(`Server ${serverId} not connected`);
+      }
+
+      // Execute tool
+      const result = await client.callTool({
+        name: toolId,
+        arguments: parameters
+      });
+
+      const executionTime = Date.now() - startTime;
+      const cost = await this.calculateExecutionCost(serverId, toolId, executionTime);
+
+      const execution: MCPExecution = {
+        id: executionId,
+        tool_id: toolId,
+        server_id: serverId,
+        agent_id: metadata.agent_id || '',
+        parameters,
+        result: result.content,
+        execution_time_ms: executionTime,
+        cost,
+        status: 'success',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          request_id: executionId,
+          user_id: metadata.user_id,
+          session_id: metadata.session_id
+        }
+      };
+
+      // Log execution
+      await supabaseService.logMCPToolExecution(execution);
+
+      // Update rate limiter
+      this.updateRateLimit(serverId);
+
+      return execution;
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      const execution: MCPExecution = {
+        id: executionId,
+        tool_id: toolId,
+        server_id: serverId,
+        agent_id: metadata.agent_id || '',
+        parameters,
+        error: errorMessage,
+        execution_time_ms: executionTime,
+        cost: 0,
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          request_id: executionId,
+          user_id: metadata.user_id,
+          session_id: metadata.session_id
+        }
+      };
+
+      await supabaseService.logMCPToolExecution(execution);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute multiple tools in parallel
+   */
+  async executeToolsBatch(
+    executions: Array<{
+      toolId: string;
+      serverId: string;
+      parameters: Record<string, any>;
+      metadata?: Record<string, any>;
+    }>
+  ): Promise<MCPExecution[]> {
+    const promises = executions.map(exec => 
+      this.executeTool(exec.toolId, exec.serverId, exec.parameters, exec.metadata)
+        .catch(error => ({
+          id: `error_${Date.now()}`,
+          tool_id: exec.toolId,
+          server_id: exec.serverId,
+          agent_id: '',
+          parameters: exec.parameters,
+          error: error.message,
+          execution_time_ms: 0,
+          cost: 0,
+          status: 'error' as const,
+          timestamp: new Date().toISOString(),
+          metadata: { request_id: `error_${Date.now()}` }
+        }))
+    );
+
+    return Promise.all(promises);
+  }
+
+  // ========================================
+  // AUTHENTICATION
+  // ========================================
+
+  /**
+   * Add authentication to transport
+   */
+  private async addAuthenticationToTransport(
+    transport: any,
+    authentication: MCPAuthentication
+  ): Promise<void> {
+    switch (authentication.type) {
+      case 'api_key':
+        if (authentication.credentials?.api_key) {
+          // Add API key to headers
+          const headers = new Headers();
+          headers.set('Authorization', `Bearer ${authentication.credentials.api_key}`);
+          // Transport-specific header setting would go here
+        }
+        break;
+      case 'oauth':
+        if (authentication.oauth_config) {
+          // Implement OAuth flow
+          const token = await this.performOAuthFlow(authentication.oauth_config);
+          // Add token to headers
+        }
+        break;
+      case 'bearer':
+        if (authentication.credentials?.token) {
+          // Add bearer token
+          const headers = new Headers();
+          headers.set('Authorization', `Bearer ${authentication.credentials.token}`);
+        }
+        break;
+    }
+  }
+
+  /**
+   * Perform OAuth authentication flow
+   */
+  private async performOAuthFlow(
+    oauthConfig: NonNullable<MCPAuthentication['oauth_config']>
+  ): Promise<string> {
+    // This would implement the full OAuth flow
+    // For now, return a placeholder
+    throw new Error('OAuth authentication not yet implemented');
+  }
+
+  // ========================================
+  // RATE LIMITING
+  // ========================================
+
+  /**
+   * Check rate limits for server/tool
+   */
+  private async checkRateLimit(serverId: string, toolId: string): Promise<void> {
+    const key = `${serverId}:${toolId}`;
+    const limiter = this.rateLimiters.get(key);
+    const now = Date.now();
+
+    if (limiter) {
+      if (now < limiter.resetTime) {
+        if (limiter.requests >= 60) { // Default limit
+          throw new Error('Rate limit exceeded');
+        }
+      } else {
+        // Reset counter
+        this.rateLimiters.set(key, {
+          requests: 0,
+          resetTime: now + 60000 // Reset in 1 minute
+        });
+      }
+    } else {
+      // Initialize rate limiter
+      this.rateLimiters.set(key, {
+        requests: 0,
+        resetTime: now + 60000
+      });
+    }
+  }
+
+  /**
+   * Update rate limit counter
+   */
+  private updateRateLimit(serverId: string, toolId?: string): void {
+    const key = toolId ? `${serverId}:${toolId}` : serverId;
+    const limiter = this.rateLimiters.get(key);
+    
+    if (limiter) {
+      limiter.requests++;
+    }
+  }
+
+  // ========================================
+  // UTILITY METHODS
+  // ========================================
+
+  /**
+   * Get server capabilities from client
+   */
+  private getServerCapabilities(client: any): string[] {
+    const capabilities: string[] = [];
+    
+    // Check what the server supports
+    // This would be based on the server's capabilities response
+    capabilities.push('tools');
+    
+    return capabilities;
+  }
+
+  /**
+   * Calculate execution cost
+   */
+  private async calculateExecutionCost(
+    serverId: string,
+    toolId: string,
+    executionTimeMs: number
+  ): Promise<number> {
+    // Get tool info for cost calculation
+    const server = await this.getConnectedServer(serverId);
+    const tool = server?.tools.find(t => t.id === toolId);
+    
+    if (tool) {
+      return tool.usage_cost;
+    }
+    
+    return 0.001; // Default cost
+  }
+
+  /**
+   * Get connected server
+   */
+  private getConnectedServer(serverId: string): MCPServer | null {
+    // This would retrieve from local cache or database
+    return null; // Placeholder
+  }
+
+  /**
+   * Get popular MCP servers
+   */
+  private getPopularMCPServers(): MCPServer[] {
+    return [
+      {
+        id: 'filesystem',
+        name: 'File System',
+        description: 'Access and manipulate files and directories',
+        endpoint: 'npx @modelcontextprotocol/server-filesystem /path/to/directory',
+        transport_type: 'stdio',
+        status: 'disconnected',
+        capabilities: ['tools'],
+        tools: [],
+        metadata: {
+          version: '1.0.0',
+          provider: 'mcp-official',
+          category: 'system',
+          last_connected: new Date().toISOString()
+        }
+      },
+      {
+        id: 'brave-search',
+        name: 'Brave Search',
+        description: 'Search the web using Brave Search API',
+        endpoint: 'npx @modelcontextprotocol/server-brave-search',
+        transport_type: 'stdio',
+        status: 'disconnected',
+        capabilities: ['tools'],
+        tools: [],
+        authentication: {
+          type: 'api_key',
+          credentials: {}
+        },
+        metadata: {
+          version: '1.0.0',
+          provider: 'mcp-official',
+          category: 'search',
+          last_connected: new Date().toISOString()
+        }
+      },
+      {
+        id: 'github',
+        name: 'GitHub',
+        description: 'Interact with GitHub repositories and issues',
+        endpoint: 'npx @modelcontextprotocol/server-github',
+        transport_type: 'stdio',
+        status: 'disconnected',
+        capabilities: ['tools'],
+        tools: [],
+        authentication: {
+          type: 'api_key',
+          credentials: {}
+        },
+        metadata: {
+          version: '1.0.0',
+          provider: 'mcp-official',
+          category: 'development',
+          last_connected: new Date().toISOString()
+        }
+      }
+    ];
+  }
+
+  /**
+   * Get user's custom servers
+   */
+  private async getUserCustomServers(): Promise<MCPServer[]> {
+    try {
+      return await supabaseService.getUserMCPServers();
+    } catch (error) {
+      console.error('Error getting user custom servers:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get connected servers
+   */
+  getConnectedServers(): MCPServer[] {
+    return Array.from(this.clients.keys()).map(serverId => {
+      // Get server info from database or cache
+      return this.getConnectedServer(serverId);
+    }).filter(Boolean) as MCPServer[];
+  }
+
+  /**
+   * Get server status
+   */
+  getServerStatus(serverId: string): 'connected' | 'disconnected' | 'error' | 'connecting' {
+    return this.clients.has(serverId) ? 'connected' : 'disconnected';
+  }
+
+  /**
+   * Test server connection
+   */
+  async testConnection(
+    endpoint: string,
+    transportType: 'sse' | 'stdio' | 'websocket' = 'sse',
+    authentication?: MCPAuthentication
+  ): Promise<boolean> {
+    const testId = 'test_connection';
+    
+    try {
+      await this.performConnection(testId, endpoint, transportType, authentication);
+      await this.disconnectFromServer(testId);
+      return true;
+    } catch (error) {
+      console.error('Connection test failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clean up all connections
+   */
+  async cleanup(): Promise<void> {
+    const disconnectPromises = Array.from(this.clients.keys()).map(serverId =>
+      this.disconnectFromServer(serverId)
+    );
+    
+    await Promise.all(disconnectPromises);
+    
+    this.clients.clear();
+    this.transports.clear();
+    this.connectionPromises.clear();
+    this.rateLimiters.clear();
+  }
+}
+
+export const mcpProtocolService = new MCPProtocolService();

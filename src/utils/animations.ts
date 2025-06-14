@@ -169,7 +169,7 @@ export const GESTURE_CONFIGS = {
 export const createInterpolation = (
   inputRange: number[],
   outputRange: number[],
-  extrapolate: typeof Extrapolate = Extrapolate.CLAMP
+  extrapolate: 'clamp' | 'extend' | 'identity' = 'clamp'
 ) => (value: number) => interpolate(value, inputRange, outputRange, extrapolate);
 
 // Common interpolations
@@ -192,24 +192,16 @@ export const createStaggeredAnimation = (
 };
 
 export const createSequentialAnimation = (
-  animations: number[],
-  onComplete?: () => void
+  animations: number[]
 ) => {
   if (animations.length === 0) return 0;
   if (animations.length === 1) {
-    if (onComplete) {
-      return withSequence(animations[0], runOnJS(onComplete)());
-    }
     return animations[0];
   }
   
   let sequence = animations[0];
   for (let i = 1; i < animations.length; i++) {
-    if (i === animations.length - 1 && onComplete) {
-      sequence = withSequence(sequence, animations[i], runOnJS(onComplete)());
-    } else {
-      sequence = withSequence(sequence, animations[i]);
-    }
+    sequence = withSequence(sequence, animations[i]);
   }
   return sequence;
 };

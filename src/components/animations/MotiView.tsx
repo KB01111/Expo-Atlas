@@ -260,14 +260,11 @@ export const MotiView: React.FC<MotiViewProps> = ({
 
   return (
     <OriginalMotiView
-      from={presetAnimation.from}
-      animate={animateProps}
+      from={presetAnimation.from as any}
+      animate={animateProps as any}
       transition={transitionProps}
-      whileHover={Object.keys(hoverProps).length > 0 ? hoverProps : undefined}
-      whileTap={Object.keys(tapProps).length > 0 ? tapProps : undefined}
-      style={style}
-      onLayout={onLayout}
-      {...props}
+      style={style as any}
+      {...(props as any)}
     >
       {children}
     </OriginalMotiView>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { createSharedStyles } from '../../styles/shared';
 import { Card, AnimatedView } from '../../components/ui';
 import { supabaseService } from '../../services/supabase';
+import { realtimeChatService, ChatParticipant } from '../../services/realtimeChat';
 import { ChatMessage, ChatSession } from '../../types';
 
 interface ChatScreenProps {
@@ -32,16 +34,78 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ sessionId, agentId }) => {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<ChatSession | null>(null);
+  const [participants, setParticipants] = useState<ChatParticipant[]>([]);
+  const [typingUsers, setTypingUsers] = useState<ChatParticipant[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  // Real-time message handler
+  const handleNewMessage = useCallback((message: ChatMessage) => {
+    setMessages(prev => {
+      // Update existing message if it's a streaming update
+      const existingIndex = prev.findIndex(m => m.id === message.id);
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex] = message;
+        return updated;
+      }
+      // Add new message
+      return [...prev, message];
+    });
+    
+    // Auto-scroll to bottom
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, []);
+
+  // Typing indicator handler
+  const handleTypingUpdate = useCallback((typingParticipants: ChatParticipant[]) => {
+    setTypingUsers(typingParticipants.filter(p => p.status === 'typing'));
+  }, []);
+
+  // Participant update handler
+  const handleParticipantUpdate = useCallback((updatedParticipants: ChatParticipant[]) => {
+    setParticipants(updatedParticipants);
+  }, []);
 
   useEffect(() => {
-    if (sessionId) {
+    if (sessionId && userId) {
       loadChatSession();
       loadMessages();
-    } else {
+      joinRealtimeSession();
+    } else if (userId) {
       createNewSession();
     }
-  }, [sessionId, agentId]);
+
+    // Cleanup on unmount
+    return () => {
+      if (sessionId && userId) {
+        realtimeChatService.leaveSession(sessionId, userId);
+      }
+    };
+  }, [sessionId, agentId, userId]);
+
+  // Join real-time session
+  const joinRealtimeSession = async () => {
+    if (!sessionId || !userId) return;
+
+    try {
+      await realtimeChatService.joinSession(
+        sessionId,
+        userId,
+        handleNewMessage,
+        handleTypingUpdate,
+        handleParticipantUpdate
+      );
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Error joining real-time session:', error);
+      Alert.alert('Connection Error', 'Failed to connect to real-time chat');
+    }
+  };
 
   const createNewSession = async () => {
     if (!userId) return;
@@ -89,47 +153,54 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ sessionId, agentId }) => {
   };
 
   const sendMessage = async () => {
-    if (!inputText.trim() || loading || !session) return;
+    if (!inputText.trim() || loading || !session || !userId) return;
 
     const messageContent = inputText.trim();
     setInputText('');
     setLoading(true);
 
     try {
-      // Save user message to database
-      const userMessage = await supabaseService.createChatMessage({
-        session_id: session.id,
-        role: 'user',
-        content: messageContent
-      });
-
-      if (userMessage) {
-        setMessages(prev => [...prev, userMessage]);
+      // Stop typing indicator
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
       }
+      await realtimeChatService.stopTyping(session.id, userId);
 
-      // Simulate agent response (in real app, this would call an AI service)
-      setTimeout(async () => {
-        try {
-          const agentMessage = await supabaseService.createChatMessage({
-            session_id: session.id,
-            role: 'agent',
-            agent_id: agentId,
-            content: `I received your message: "${messageContent}". This is a simulated response. In a real implementation, this would be processed by an AI agent.`
-          });
+      // Send message via real-time service
+      await realtimeChatService.sendMessage(
+        session.id,
+        userId,
+        messageContent
+      );
 
-          if (agentMessage) {
-            setMessages(prev => [...prev, agentMessage]);
-          }
-        } catch (error) {
-          console.error('Error creating agent message:', error);
-        } finally {
-          setLoading(false);
-        }
-      }, 1500);
+      // Clear input and focus
+      inputRef.current?.focus();
     } catch (error) {
       console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message');
+    } finally {
       setLoading(false);
     }
+  };
+
+  // Handle typing indicator
+  const handleInputChange = async (text: string) => {
+    setInputText(text);
+
+    if (!session || !userId) return;
+
+    // Start typing indicator
+    await realtimeChatService.startTyping(session.id, userId);
+
+    // Reset typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Stop typing after 1 second of inactivity
+    typingTimeoutRef.current = setTimeout(async () => {
+      await realtimeChatService.stopTyping(session.id, userId);
+    }, 1000);
   };
 
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => {
@@ -216,16 +287,26 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ sessionId, agentId }) => {
         showsVerticalScrollIndicator={false}
       />
 
-      {loading && (
+      {(loading || typingUsers.length > 0) && (
         <View style={styles.typingIndicator}>
           <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
             <Ionicons name="person" size={16} color="#FFFFFF" />
           </View>
           <View style={[styles.typingBubble, { backgroundColor: theme.colors.surface }]}>
             <Text style={[styles.typingText, { color: theme.colors.textSecondary }]}>
-              Agent is typing...
+              {loading ? 'Sending...' : 
+               typingUsers.length > 0 ? `${typingUsers.length === 1 ? 'Someone is' : 'People are'} typing...` : 
+               'Agent is typing...'}
             </Text>
           </View>
+        </View>
+      )}
+
+      {/* Connection Status */}
+      {!isConnected && (
+        <View style={[styles.connectionStatus, { backgroundColor: theme.colors.warning }]}>
+          <Ionicons name="wifi-outline" size={16} color="#FFFFFF" />
+          <Text style={styles.connectionText}>Reconnecting...</Text>
         </View>
       )}
 
@@ -239,13 +320,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ sessionId, agentId }) => {
           </TouchableOpacity>
           
           <TextInput
+            ref={inputRef}
             style={[styles.textInput, { color: theme.colors.text }]}
             placeholder="Type a message..."
             placeholderTextColor={theme.colors.textSecondary}
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={handleInputChange}
             multiline
             maxLength={1000}
+            onSubmitEditing={sendMessage}
+            returnKeyType="send"
+            blurOnSubmit={false}
           />
           
           <TouchableOpacity
@@ -368,6 +453,19 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  connectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  connectionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 

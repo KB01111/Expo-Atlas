@@ -45,7 +45,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     return sizes[size];
   };
 
-  const getVariantStyles = () => {
+  const getVariantStyles = (): { container: any; text: any } => {
     const sizeStyles = getSizeStyles();
     
     switch (variant) {

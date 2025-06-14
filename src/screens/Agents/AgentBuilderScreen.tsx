@@ -10,21 +10,33 @@ import {
   TextInput,
   Switch,
   Dimensions,
+  ActivityIndicator,
+  SafeAreaView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Card, Button, Modal } from '../../components/ui';
+import { Card, Button, Modal, StatusBadge, AnimatedView } from '../../components/ui';
 import { MotiView } from '../../components/animations';
 import { createSharedStyles } from '../../styles/shared';
 import { agentBuilderService } from '../../services/agentBuilder';
 import { openaiModelsService } from '../../services/openaiModels';
+import { openaiAgentsComplete } from '../../services/openaiAgentsComplete';
+import { supabaseService } from '../../services/supabase';
 import { 
   OpenAIAgentBuilderConfig, 
   AgentBuilderState, 
   CustomFunction,
   AgentFile,
-  AgentTemplate 
+  AgentTemplate,
+  OpenAIFile,
+  OpenAIVectorStore,
+  AgentTestConversation,
+  AgentTestMetrics,
+  OpenAIAgentConfig
 } from '../../types/openai';
 import { AppTheme } from '../../types';
 import MCPToolsPanel from '../../components/mcp/MCPToolsPanel';
@@ -76,6 +88,8 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
     code_interpreter: false,
     file_search: false,
     functions: [] as CustomFunction[],
+    parallel_tool_calls: true,
+    tool_choice: 'auto' as 'auto' | 'none' | 'required',
   });
 
   const [filesForm, setFilesForm] = useState({
@@ -88,18 +102,34 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
     temperature: 0.7,
     top_p: 1.0,
     max_tokens: 4096,
+    max_completion_tokens: 4096,
+    max_prompt_tokens: 32000,
+    response_format: 'auto' as 'auto' | 'text' | 'json_object',
     timeout_seconds: 60,
     max_retries: 3,
     fallback_behavior: 'error' as 'error' | 'default_response' | 'escalate',
+    frequency_penalty: 0,
+    presence_penalty: 0,
+    seed: undefined as number | undefined,
   });
 
   // UI State
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [modelCategories, setModelCategories] = useState<any[]>([]);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templates, setTemplates] = useState<AgentTemplate[]>([]);
   const [newGoal, setNewGoal] = useState('');
   const [newConstraint, setNewConstraint] = useState('');
   const [newTag, setNewTag] = useState('');
+  
+  // Enhanced Features State
+  const [uploadedFiles, setUploadedFiles] = useState<OpenAIFile[]>([]);
+  const [vectorStores, setVectorStores] = useState<OpenAIVectorStore[]>([]);
+  const [testConversations, setTestConversations] = useState<AgentTestConversation[]>([]);
+  const [testMetrics, setTestMetrics] = useState<AgentTestMetrics | null>(null);
+  const [isFileUploading, setIsFileUploading] = useState(false);
+  const [isCreatingVectorStore, setIsCreatingVectorStore] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     initializeBuilder();
@@ -150,10 +180,24 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
 
   const loadAvailableModels = async () => {
     try {
-      const models = await openaiModelsService.getAvailableModelIds();
+      const [models, categories] = await Promise.all([
+        openaiModelsService.fetchAllModels(),
+        openaiModelsService.getModelsByCategory()
+      ]);
       setAvailableModels(models);
+      setModelCategories(categories);
     } catch (error) {
       console.error('Error loading models:', error);
+      // Set fallback models
+      setAvailableModels([
+        { id: 'gpt-4.5', description: 'Latest and most capable model', capabilities: { vision: true, reasoning: false } },
+        { id: 'gpt-4.1', description: 'Advanced model with improved capabilities', capabilities: { vision: true, reasoning: false } },
+        { id: 'o4-mini', description: 'Compact reasoning model', capabilities: { vision: false, reasoning: true } },
+        { id: 'o3-mini', description: 'Advanced reasoning model', capabilities: { vision: false, reasoning: true } },
+        { id: 'gpt-4o', description: 'Multimodal model with vision', capabilities: { vision: true, reasoning: false } },
+        { id: 'gpt-4o-mini', description: 'Cost-effective vision model', capabilities: { vision: true, reasoning: false } }
+      ]);
+      setModelCategories([]);
     }
   };
 
@@ -268,15 +312,274 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
     }));
   };
 
-  const deployAgent = async () => {
-    if (!builderId) return;
+  // Enhanced File Management Functions
+  const uploadFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
 
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      setIsFileUploading(true);
+
+      // Create a File object from the asset
+      const file = {
+        uri: asset.uri,
+        name: asset.name,
+        type: asset.mimeType || 'application/octet-stream',
+        size: asset.size,
+      } as any;
+
+      // Upload to OpenAI
+      const uploadedFile = await openaiAgentsComplete.uploadFile(file, {
+        purpose: 'assistants',
+        filename: asset.name,
+        description: `Knowledge file for agent: ${basicForm.name}`,
+        file_type: 'document',
+      });
+
+      // Save to Supabase
+      await supabaseService.saveOpenAIFile(uploadedFile);
+
+      setUploadedFiles(prev => [...prev, uploadedFile]);
+      
+      // Add to builder config
+      const agentFile: AgentFile = {
+        id: uploadedFile.id,
+        name: uploadedFile.filename,
+        type: 'knowledge',
+        size_bytes: uploadedFile.bytes,
+        mime_type: asset.mimeType || 'application/octet-stream',
+        openai_file_id: uploadedFile.id,
+        processing_status: 'completed',
+        metadata: {
+          upload_source: 'local',
+          tags: [],
+          auto_update: false,
+          last_modified: new Date().toISOString(),
+        },
+      };
+
+      setFilesForm(prev => ({
+        ...prev,
+        knowledge_files: [...prev.knowledge_files, agentFile]
+      }));
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('File upload failed:', error);
+      Alert.alert('Upload Failed', 'Failed to upload file. Please try again.');
+    } finally {
+      setIsFileUploading(false);
+    }
+  };
+
+  const createVectorStore = async () => {
+    if (filesForm.knowledge_files.length === 0) {
+      Alert.alert('No Files', 'Please upload some files first.');
+      return;
+    }
+
+    setIsCreatingVectorStore(true);
+    try {
+      const vectorStore = await openaiAgentsComplete.createVectorStore({
+        name: `${basicForm.name} Knowledge Base`,
+        file_ids: filesForm.knowledge_files
+          .filter(f => f.openai_file_id)
+          .map(f => f.openai_file_id!),
+      });
+
+      await supabaseService.saveOpenAIVectorStore(vectorStore);
+      setVectorStores(prev => [...prev, vectorStore]);
+      
+      setFilesForm(prev => ({
+        ...prev,
+        vector_store_ids: [...prev.vector_store_ids, vectorStore.id]
+      }));
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Vector store creation failed:', error);
+      Alert.alert('Creation Failed', 'Failed to create vector store. Please try again.');
+    } finally {
+      setIsCreatingVectorStore(false);
+    }
+  };
+
+  const testAgent = async () => {
+    setIsTesting(true);
+    try {
+      // Create a temporary agent for testing
+      const testConfig: OpenAIAgentConfig = {
+        name: `${basicForm.name} (Test)`,
+        description: basicForm.description,
+        instructions: instructionsForm.system_prompt,
+        model: basicForm.model,
+        tools: [],
+        temperature: advancedForm.temperature,
+        top_p: advancedForm.top_p,
+        max_tokens: advancedForm.max_tokens,
+      };
+
+      if (toolsForm.code_interpreter) {
+        testConfig.tools!.push({ type: 'code_interpreter' });
+      }
+      if (toolsForm.file_search) {
+        testConfig.tools!.push({ type: 'file_search' });
+      }
+
+      const testAgent = await openaiAgentsComplete.createAgent(testConfig);
+      
+      // Run test conversations
+      const testPrompts = [
+        'Hello, can you introduce yourself?',
+        'What are your main capabilities?',
+        'How can you help me?',
+      ];
+
+      const conversations: AgentTestConversation[] = [];
+      
+      for (const prompt of testPrompts) {
+        const startTime = Date.now();
+        try {
+          const execution = await openaiAgentsComplete.executeAgent(testAgent.id, prompt);
+          const endTime = Date.now();
+
+          conversations.push({
+            id: `test_${Date.now()}_${Math.random()}`,
+            name: `Test: ${prompt.slice(0, 30)}...`,
+            messages: [
+              { role: 'user', content: prompt, timestamp: new Date(startTime).toISOString() },
+              { role: 'assistant', content: execution.output, timestamp: new Date(endTime).toISOString() },
+            ],
+            metrics: {
+              response_time_ms: endTime - startTime,
+              tokens_used: execution.tokensUsed,
+              cost: execution.cost,
+            },
+            status: 'completed',
+            created_at: new Date().toISOString(),
+          });
+        } catch (error) {
+          conversations.push({
+            id: `test_${Date.now()}_${Math.random()}`,
+            name: `Test: ${prompt.slice(0, 30)}... (Failed)`,
+            messages: [
+              { role: 'user', content: prompt, timestamp: new Date().toISOString() },
+            ],
+            metrics: {
+              response_time_ms: 0,
+              tokens_used: 0,
+              cost: 0,
+            },
+            status: 'failed',
+            created_at: new Date().toISOString(),
+          });
+        }
+      }
+
+      setTestConversations(conversations);
+      
+      // Calculate metrics
+      const metrics: AgentTestMetrics = {
+        total_tests: conversations.length,
+        passed_tests: conversations.filter(c => c.status === 'completed').length,
+        failed_tests: conversations.filter(c => c.status === 'failed').length,
+        average_response_time: conversations.reduce((sum, c) => sum + c.metrics.response_time_ms, 0) / conversations.length,
+        average_cost_per_interaction: conversations.reduce((sum, c) => sum + c.metrics.cost, 0) / conversations.length,
+        total_tokens_used: conversations.reduce((sum, c) => sum + c.metrics.tokens_used, 0),
+        success_rate: (conversations.filter(c => c.status === 'completed').length / conversations.length) * 100,
+        common_failures: [],
+      };
+
+      setTestMetrics(metrics);
+
+      // Clean up test agent
+      await openaiAgentsComplete.deleteAgent(testAgent.id);
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Agent testing failed:', error);
+      Alert.alert('Test Failed', 'Failed to test agent. Please check your configuration.');
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const deployAgent = async () => {
     try {
       setSaving(true);
       await saveCurrentStep();
       
-      const deployment = await agentBuilderService.deployAgent(builderId, 'production');
+      // Build final agent configuration using OpenAI SDK
+      const finalConfig: OpenAIAgentConfig = {
+        name: basicForm.name,
+        description: basicForm.description,
+        instructions: instructionsForm.system_prompt,
+        model: basicForm.model,
+        tools: [],
+        tool_resources: {},
+        temperature: advancedForm.temperature,
+        top_p: advancedForm.top_p,
+        max_tokens: advancedForm.max_tokens,
+        max_completion_tokens: advancedForm.max_completion_tokens,
+        max_prompt_tokens: advancedForm.max_prompt_tokens,
+        response_format: advancedForm.response_format === 'auto' ? 'auto' : 
+                        advancedForm.response_format === 'text' ? { type: 'text' } :
+                        { type: 'json_object' },
+        parallel_tool_calls: toolsForm.parallel_tool_calls,
+        metadata: {
+          category: basicForm.category,
+          tags: basicForm.tags,
+          personality: instructionsForm.personality,
+          goals: instructionsForm.goals,
+          constraints: instructionsForm.constraints,
+          tool_choice: toolsForm.tool_choice,
+          frequency_penalty: advancedForm.frequency_penalty,
+          presence_penalty: advancedForm.presence_penalty,
+          seed: advancedForm.seed,
+          created_with: 'expo-atlas-agent-builder',
+          created_at: new Date().toISOString(),
+        },
+      };
+
+      // Add tools
+      if (toolsForm.code_interpreter) {
+        finalConfig.tools!.push({ type: 'code_interpreter' });
+      }
+      if (toolsForm.file_search) {
+        finalConfig.tools!.push({ type: 'file_search' });
+        if (filesForm.vector_store_ids.length > 0) {
+          finalConfig.tool_resources!.file_search = {
+            vector_store_ids: filesForm.vector_store_ids,
+          };
+        }
+      }
+
+      // Add custom functions
+      toolsForm.functions.forEach(func => {
+        finalConfig.tools!.push({
+          type: 'function',
+          function: {
+            name: func.name,
+            description: func.description,
+            parameters: func.parameters,
+          },
+        });
+      });
+
+      // Create the agent via OpenAI
+      const deployedAgent = await openaiAgentsComplete.createAgent(finalConfig);
       
+      // Save via agent builder service if available
+      if (builderId) {
+        await agentBuilderService.deployAgent(builderId, 'production');
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         'Agent Deployed Successfully!',
         `Your agent "${basicForm.name}" has been deployed and is ready to use.`,
@@ -382,27 +685,123 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
 
       <View style={styles.formSection}>
         <Text style={styles.formLabel}>Model *</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.modelSelector}>
-            {availableModels.map((model) => (
+        <Text style={styles.formHelp}>
+          Choose the AI model that best fits your agent's requirements
+        </Text>
+        
+        {modelCategories.length > 0 ? (
+          // Render categorized models
+          modelCategories.map((category) => (
+            <View key={category.category} style={styles.modelCategory}>
+              <Text style={styles.modelCategoryTitle}>{category.category}</Text>
+              <Text style={styles.modelCategoryDescription}>{category.description}</Text>
+              <View style={styles.modelGrid}>
+                {category.models.map((model: any) => (
+                  <TouchableOpacity
+                    key={model.id}
+                    style={[
+                      styles.modelCard,
+                      basicForm.model === model.id && styles.modelCardSelected
+                    ]}
+                    onPress={() => setBasicForm(prev => ({ ...prev, model: model.id }))}
+                  >
+                    <View style={styles.modelCardHeader}>
+                      <Text style={[
+                        styles.modelCardTitle,
+                        basicForm.model === model.id && styles.modelCardTitleSelected
+                      ]}>
+                        {model.id}
+                      </Text>
+                      <View style={styles.modelCapabilities}>
+                        {model.capabilities?.vision && (
+                          <View style={styles.capabilityBadge}>
+                            <Ionicons name="eye" size={12} color={theme.colors.primary} />
+                            <Text style={styles.capabilityText}>Vision</Text>
+                          </View>
+                        )}
+                        {model.capabilities?.reasoning && (
+                          <View style={styles.capabilityBadge}>
+                            <Ionicons name="bulb" size={12} color={theme.colors.secondary} />
+                            <Text style={styles.capabilityText}>Reasoning</Text>
+                          </View>
+                        )}
+                        {model.capabilities?.function_calling && (
+                          <View style={styles.capabilityBadge}>
+                            <Ionicons name="code" size={12} color={theme.colors.success} />
+                            <Text style={styles.capabilityText}>Functions</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <Text style={styles.modelCardDescription}>
+                      {model.description}
+                    </Text>
+                    {model.pricing && (
+                      <View style={styles.modelPricing}>
+                        <Text style={styles.pricingText}>
+                          ${model.pricing.input_tokens_per_1k}/1K in • ${model.pricing.output_tokens_per_1k}/1K out
+                        </Text>
+                        <Text style={styles.contextWindow}>
+                          {model.context_window ? `${(model.context_window / 1000).toFixed(0)}K context` : ''}
+                        </Text>
+                      </View>
+                    )}
+                    {basicForm.model === model.id && (
+                      <View style={styles.selectedIndicator}>
+                        <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))
+        ) : (
+          // Fallback to simple model list
+          <View style={styles.modelGrid}>
+            {availableModels.slice(0, 6).map((model) => (
               <TouchableOpacity
-                key={model}
+                key={model.id}
                 style={[
-                  styles.modelOption,
-                  basicForm.model === model && styles.modelOptionSelected
+                  styles.modelCard,
+                  basicForm.model === model.id && styles.modelCardSelected
                 ]}
-                onPress={() => setBasicForm(prev => ({ ...prev, model }))}
+                onPress={() => setBasicForm(prev => ({ ...prev, model: model.id }))}
               >
                 <Text style={[
-                  styles.modelOptionText,
-                  basicForm.model === model && styles.modelOptionTextSelected
+                  styles.modelCardTitle,
+                  basicForm.model === model.id && styles.modelCardTitleSelected
                 ]}>
-                  {model}
+                  {model.id}
                 </Text>
+                <Text style={styles.modelCardDescription}>
+                  {model.description}
+                </Text>
+                {model.capabilities && (
+                  <View style={styles.modelCapabilities}>
+                    {model.capabilities.vision && (
+                      <View style={styles.capabilityBadge}>
+                        <Ionicons name="eye" size={12} color={theme.colors.primary} />
+                        <Text style={styles.capabilityText}>Vision</Text>
+                      </View>
+                    )}
+                    {model.capabilities.reasoning && (
+                      <View style={styles.capabilityBadge}>
+                        <Ionicons name="bulb" size={12} color={theme.colors.secondary} />
+                        <Text style={styles.capabilityText}>Reasoning</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+                {basicForm.model === model.id && (
+                  <View style={styles.selectedIndicator}>
+                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
-        </ScrollView>
+        )}
       </View>
 
       <View style={styles.formSection}>
@@ -603,6 +1002,57 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
       </View>
 
       <View style={styles.formSection}>
+        <Text style={styles.formLabel}>Tool Configuration</Text>
+        
+        <View style={styles.toolConfigOption}>
+          <View style={styles.toolInfo}>
+            <Text style={styles.toolName}>Parallel Tool Calls</Text>
+            <Text style={styles.toolDescription}>
+              Allow the agent to call multiple tools simultaneously
+            </Text>
+          </View>
+          <Switch
+            value={toolsForm.parallel_tool_calls}
+            onValueChange={(value) => setToolsForm(prev => ({ ...prev, parallel_tool_calls: value }))}
+            thumbColor={toolsForm.parallel_tool_calls ? theme.colors.primary : theme.colors.textSecondary}
+            trackColor={{ false: theme.colors.border, true: theme.colors.primary + '30' }}
+          />
+        </View>
+
+        <View style={styles.toolConfigSection}>
+          <Text style={styles.toolConfigLabel}>Tool Choice Strategy</Text>
+          <View style={styles.radioGroup}>
+            {(['auto', 'none', 'required'] as const).map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={styles.radioOption}
+                onPress={() => setToolsForm(prev => ({ ...prev, tool_choice: option }))}
+              >
+                <View style={[
+                  styles.radioCircle,
+                  toolsForm.tool_choice === option && styles.radioCircleSelected
+                ]}>
+                  {toolsForm.tool_choice === option && (
+                    <View style={styles.radioInner} />
+                  )}
+                </View>
+                <View style={styles.radioContent}>
+                  <Text style={styles.radioLabel}>
+                    {option === 'auto' ? 'Auto' : option === 'none' ? 'None' : 'Required'}
+                  </Text>
+                  <Text style={styles.radioDescription}>
+                    {option === 'auto' ? 'Let the model decide when to use tools' :
+                     option === 'none' ? 'Disable all tool usage' :
+                     'Force the model to use at least one tool'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.formSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.formLabel}>Custom Functions</Text>
           <TouchableOpacity style={styles.addButton}>
@@ -666,6 +1116,184 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
             console.log('MCP tools updated:', tools);
           }}
         />
+      </View>
+    </View>
+  );
+
+  const renderFilesStep = () => (
+    <View style={styles.stepContent}>
+      <Text style={styles.stepTitle}>Knowledge Base & Files</Text>
+      <Text style={styles.stepDescription}>
+        Upload files to create a knowledge base for your agent
+      </Text>
+
+      <View style={styles.formSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.formLabel}>Files</Text>
+          <Button
+            title={isFileUploading ? "Uploading..." : "Upload File"}
+            onPress={uploadFile}
+            variant="outline"
+            size="sm"
+            disabled={isFileUploading}
+            loading={isFileUploading}
+            icon={<Ionicons name="cloud-upload" size={16} color={theme.colors.primary} />}
+          />
+        </View>
+        
+        {filesForm.knowledge_files.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="document-outline" size={48} color={theme.colors.textSecondary} />
+            <Text style={styles.emptyStateText}>No files uploaded yet</Text>
+            <Text style={styles.emptyStateDescription}>
+              Upload documents, PDFs, or text files to give your agent knowledge
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.filesList}>
+            {filesForm.knowledge_files.map((file) => (
+              <View key={file.id} style={styles.fileItem}>
+                <Ionicons name="document" size={24} color={theme.colors.primary} />
+                <View style={styles.fileInfo}>
+                  <Text style={styles.fileName}>{file.name}</Text>
+                  <Text style={styles.fileSize}>
+                    {(file.size_bytes / 1024).toFixed(1)} KB • {file.type}
+                  </Text>
+                </View>
+                <StatusBadge 
+                  status={file.processing_status === 'completed' ? 'success' : 'pending'} 
+                />
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {filesForm.knowledge_files.length > 0 && (
+        <View style={styles.formSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.formLabel}>Vector Stores</Text>
+            <Button
+              title={isCreatingVectorStore ? "Creating..." : "Create Vector Store"}
+              onPress={createVectorStore}
+              variant="outline"
+              size="sm"
+              disabled={isCreatingVectorStore}
+              loading={isCreatingVectorStore}
+              icon={<Ionicons name="library" size={16} color={theme.colors.secondary} />}
+            />
+          </View>
+          
+          {vectorStores.length === 0 ? (
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={20} color={theme.colors.info} />
+              <Text style={styles.infoText}>
+                Create a vector store to enable semantic search across your files
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.vectorStoresList}>
+              {vectorStores.map((store) => (
+                <View key={store.id} style={styles.vectorStoreItem}>
+                  <Ionicons name="library" size={24} color={theme.colors.success} />
+                  <View style={styles.vectorStoreInfo}>
+                    <Text style={styles.vectorStoreName}>{store.name}</Text>
+                    <Text style={styles.vectorStoreStats}>
+                      {store.file_counts.total} files • {(store.usage_bytes / 1024 / 1024).toFixed(1)} MB
+                    </Text>
+                  </View>
+                  <StatusBadge 
+                    status={store.status === 'completed' ? 'success' : 'pending'} 
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+
+  const renderTestStep = () => (
+    <View style={styles.stepContent}>
+      <Text style={styles.stepTitle}>Test Your Agent</Text>
+      <Text style={styles.stepDescription}>
+        Run tests to validate your agent's behavior and performance
+      </Text>
+
+      <View style={styles.formSection}>
+        <View style={styles.testSection}>
+          <Button
+            title={isTesting ? "Running Tests..." : "Run Test Suite"}
+            onPress={testAgent}
+            variant="primary"
+            disabled={isTesting || !basicForm.name || !instructionsForm.system_prompt}
+            loading={isTesting}
+            icon={<Ionicons name="play" size={20} color="#FFFFFF" />}
+            style={styles.testButton}
+          />
+          
+          {testMetrics && (
+            <View style={styles.testResults}>
+              <Text style={styles.testResultsTitle}>Test Results</Text>
+              <View style={styles.metricsGrid}>
+                <View style={styles.metricItem}>
+                  <Text style={styles.metricValue}>{testMetrics.success_rate.toFixed(1)}%</Text>
+                  <Text style={styles.metricLabel}>Success Rate</Text>
+                </View>
+                <View style={styles.metricItem}>
+                  <Text style={styles.metricValue}>{testMetrics.average_response_time.toFixed(0)}ms</Text>
+                  <Text style={styles.metricLabel}>Avg Response Time</Text>
+                </View>
+                <View style={styles.metricItem}>
+                  <Text style={styles.metricValue}>${testMetrics.average_cost_per_interaction.toFixed(4)}</Text>
+                  <Text style={styles.metricLabel}>Avg Cost</Text>
+                </View>
+                <View style={styles.metricItem}>
+                  <Text style={styles.metricValue}>{testMetrics.total_tokens_used}</Text>
+                  <Text style={styles.metricLabel}>Total Tokens</Text>
+                </View>
+              </View>
+            </View>
+          )}
+          
+          {testConversations.length > 0 && (
+            <View style={styles.conversationsSection}>
+              <Text style={styles.conversationsTitle}>Test Conversations</Text>
+              {testConversations.map((conversation) => (
+                <Card key={conversation.id} style={styles.conversationCard}>
+                  <View style={styles.conversationHeader}>
+                    <Text style={styles.conversationTitle}>{conversation.name}</Text>
+                    <StatusBadge 
+                      status={conversation.status === 'completed' ? 'success' : 'error'} 
+                    />
+                  </View>
+                  {conversation.messages.map((message, index) => (
+                    <View key={index} style={[
+                      styles.messageItem,
+                      message.role === 'user' && styles.userMessage,
+                      message.role === 'assistant' && styles.assistantMessage,
+                    ]}>
+                      <Text style={styles.messageRole}>{message.role}:</Text>
+                      <Text style={styles.messageContent}>{message.content}</Text>
+                    </View>
+                  ))}
+                  <View style={styles.conversationMetrics}>
+                    <Text style={styles.metricText}>
+                      Response: {conversation.metrics.response_time_ms}ms
+                    </Text>
+                    <Text style={styles.metricText}>
+                      Tokens: {conversation.metrics.tokens_used}
+                    </Text>
+                    <Text style={styles.metricText}>
+                      Cost: ${conversation.metrics.cost.toFixed(4)}
+                    </Text>
+                  </View>
+                </Card>
+              ))}
+            </View>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -755,6 +1383,137 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
             timeout_seconds: parseInt(text) || 60 
           }))}
           placeholder="60"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="numeric"
+        />
+      </View>
+
+      <View style={styles.formSection}>
+        <Text style={styles.formLabel}>Response Format</Text>
+        <Text style={styles.formHelp}>
+          Control the format of the agent's responses
+        </Text>
+        <View style={styles.radioGroup}>
+          {(['auto', 'text', 'json_object'] as const).map((option) => (
+            <TouchableOpacity
+              key={option}
+              style={styles.radioOption}
+              onPress={() => setAdvancedForm(prev => ({ ...prev, response_format: option }))}
+            >
+              <View style={[
+                styles.radioCircle,
+                advancedForm.response_format === option && styles.radioCircleSelected
+              ]}>
+                {advancedForm.response_format === option && (
+                  <View style={styles.radioInner} />
+                )}
+              </View>
+              <View style={styles.radioContent}>
+                <Text style={styles.radioLabel}>
+                  {option === 'auto' ? 'Auto' : option === 'text' ? 'Text Only' : 'JSON Object'}
+                </Text>
+                <Text style={styles.radioDescription}>
+                  {option === 'auto' ? 'Let the model choose the best format' :
+                   option === 'text' ? 'Always respond in plain text' :
+                   'Always respond with valid JSON objects'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.formSection}>
+        <Text style={styles.formLabel}>Token Limits</Text>
+        <View style={styles.tokenLimitsGrid}>
+          <View style={styles.tokenLimitItem}>
+            <Text style={styles.tokenLimitLabel}>Max Completion Tokens</Text>
+            <TextInput
+              style={styles.tokenInput}
+              value={advancedForm.max_completion_tokens.toString()}
+              onChangeText={(text) => setAdvancedForm(prev => ({ 
+                ...prev, 
+                max_completion_tokens: parseInt(text) || 4096 
+              }))}
+              keyboardType="numeric"
+              placeholder="4096"
+            />
+          </View>
+          <View style={styles.tokenLimitItem}>
+            <Text style={styles.tokenLimitLabel}>Max Prompt Tokens</Text>
+            <TextInput
+              style={styles.tokenInput}
+              value={advancedForm.max_prompt_tokens.toString()}
+              onChangeText={(text) => setAdvancedForm(prev => ({ 
+                ...prev, 
+                max_prompt_tokens: parseInt(text) || 32000 
+              }))}
+              keyboardType="numeric"
+              placeholder="32000"
+            />
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.formSection}>
+        <Text style={styles.formLabel}>Penalty Settings</Text>
+        <Text style={styles.formHelp}>
+          Control repetition and topic diversity in responses
+        </Text>
+        
+        <View style={styles.penaltySection}>
+          <Text style={styles.penaltyLabel}>Frequency Penalty: {advancedForm.frequency_penalty.toFixed(1)}</Text>
+          <Text style={styles.penaltyDescription}>
+            Reduces repetition of tokens based on frequency (-2.0 to 2.0)
+          </Text>
+          <TextInput
+            style={styles.numericInput}
+            value={advancedForm.frequency_penalty.toString()}
+            onChangeText={(text) => {
+              const value = parseFloat(text);
+              if (!isNaN(value) && value >= -2 && value <= 2) {
+                setAdvancedForm(prev => ({ ...prev, frequency_penalty: value }));
+              }
+            }}
+            keyboardType="numeric"
+          />
+        </View>
+
+        <View style={styles.penaltySection}>
+          <Text style={styles.penaltyLabel}>Presence Penalty: {advancedForm.presence_penalty.toFixed(1)}</Text>
+          <Text style={styles.penaltyDescription}>
+            Encourages talking about new topics (-2.0 to 2.0)
+          </Text>
+          <TextInput
+            style={styles.numericInput}
+            value={advancedForm.presence_penalty.toString()}
+            onChangeText={(text) => {
+              const value = parseFloat(text);
+              if (!isNaN(value) && value >= -2 && value <= 2) {
+                setAdvancedForm(prev => ({ ...prev, presence_penalty: value }));
+              }
+            }}
+            keyboardType="numeric"
+          />
+        </View>
+      </View>
+
+      <View style={styles.formSection}>
+        <Text style={styles.formLabel}>Reproducibility</Text>
+        <Text style={styles.formHelp}>
+          Set a seed for deterministic outputs (optional)
+        </Text>
+        <TextInput
+          style={styles.formInput}
+          value={advancedForm.seed?.toString() || ''}
+          onChangeText={(text) => {
+            const value = parseInt(text);
+            setAdvancedForm(prev => ({ 
+              ...prev, 
+              seed: isNaN(value) ? undefined : value 
+            }));
+          }}
+          placeholder="Leave empty for random outputs"
           placeholderTextColor={theme.colors.textSecondary}
           keyboardType="numeric"
         />
@@ -937,7 +1696,9 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
         {currentStep === 'basic' && renderBasicStep()}
         {currentStep === 'instructions' && renderInstructionsStep()}
         {currentStep === 'tools' && renderToolsStep()}
+        {currentStep === 'files' && renderFilesStep()}
         {currentStep === 'advanced' && renderAdvancedStep()}
+        {currentStep === 'test' && renderTestStep()}
         {currentStep === 'deploy' && renderDeployStep()}
       </ScrollView>
 
@@ -1544,6 +2305,567 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   navButton: {
     flex: 1,
+  },
+  // Enhanced Model Selection Styles
+  modelCategory: {
+    marginBottom: 24,
+  },
+  modelCategoryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  modelCategoryDescription: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  modelGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  modelCard: {
+    flex: 1,
+    minWidth: width > 768 ? '45%' : '100%',
+    maxWidth: width > 768 ? '48%' : '100%',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    position: 'relative',
+  },
+  modelCardSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary + '10',
+  },
+  modelCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  modelCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.text,
+    flex: 1,
+  },
+  modelCardTitleSelected: {
+    color: theme.colors.primary,
+  },
+  modelCardDescription: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  modelCapabilities: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  capabilityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: theme.colors.border,
+    gap: 4,
+  },
+  capabilityText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  modelPricing: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  pricingText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  contextWindow: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  // Enhanced Tool Configuration Styles
+  toolConfigOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: 12,
+  },
+  toolConfigSection: {
+    marginTop: 16,
+  },
+  toolConfigLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  radioContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  radioDescription: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  // Enhanced Advanced Configuration Styles
+  tokenLimitsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  tokenLimitItem: {
+    flex: 1,
+  },
+  tokenLimitLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  tokenInput: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.surface,
+    textAlign: 'center',
+  },
+  penaltySection: {
+    marginBottom: 20,
+  },
+  penaltyLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  penaltyDescription: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  // Enhanced Files Step Styles
+  filesList: {
+    gap: 12,
+  },
+  fileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    gap: 12,
+  },
+  fileInfo: {
+    flex: 1,
+  },
+  fileName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  fileSize: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: theme.colors.info + '20',
+    borderWidth: 1,
+    borderColor: theme.colors.info + '50',
+    gap: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: theme.colors.text,
+    flex: 1,
+    lineHeight: 20,
+  },
+  vectorStoresList: {
+    gap: 12,
+  },
+  vectorStoreItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    gap: 12,
+  },
+  vectorStoreInfo: {
+    flex: 1,
+  },
+  vectorStoreName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  vectorStoreStats: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+  },
+  // Enhanced Test Step Styles
+  testSection: {
+    gap: 16,
+  },
+  testButton: {
+    marginBottom: 16,
+  },
+  testResults: {
+    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  testResultsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 16,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  metricItem: {
+    alignItems: 'center',
+    minWidth: '22%',
+  },
+  metricValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.primary,
+    marginBottom: 4,
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  conversationsSection: {
+    marginTop: 24,
+  },
+  conversationsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  conversationCard: {
+    marginBottom: 12,
+  },
+  conversationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  conversationTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+    flex: 1,
+    marginRight: 8,
+  },
+  messageItem: {
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 8,
+  },
+  userMessage: {
+    backgroundColor: theme.colors.primary + '20',
+    alignSelf: 'flex-end',
+    maxWidth: '85%',
+    marginLeft: '15%',
+  },
+  assistantMessage: {
+    backgroundColor: theme.colors.border,
+    alignSelf: 'flex-start',
+    maxWidth: '85%',
+    marginRight: '15%',
+  },
+  messageRole: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    marginBottom: 4,
+    textTransform: 'capitalize',
+  },
+  messageContent: {
+    fontSize: 14,
+    color: theme.colors.text,
+    lineHeight: 20,
+  },
+  conversationMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  metricText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  
+  // Enhanced Model Selection Styles
+  modelCategory: {
+    marginBottom: 24,
+  },
+  modelCategoryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  modelCategoryDescription: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: 16,
+  },
+  modelGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  modelCard: {
+    width: (width - 60) / 2,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    position: 'relative',
+  },
+  modelCardSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary + '10',
+  },
+  modelCardHeader: {
+    marginBottom: 8,
+  },
+  modelCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  modelCardTitleSelected: {
+    color: theme.colors.primary,
+  },
+  modelCardDescription: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  modelCapabilities: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  capabilityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.border,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 3,
+  },
+  capabilityText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  modelPricing: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  pricingText: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  contextWindow: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  
+  // Enhanced Tool Configuration Styles
+  toolConfigOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  toolConfigSection: {
+    marginTop: 16,
+  },
+  toolConfigLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  
+  // Advanced Configuration Styles
+  sliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 8,
+  },
+  sliderLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    width: 20,
+    textAlign: 'center',
+  },
+  sliderTrack: {
+    flex: 1,
+    height: 4,
+    backgroundColor: theme.colors.border,
+    borderRadius: 2,
+    position: 'relative',
+  },
+  sliderFill: {
+    height: 4,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 2,
+  },
+  sliderThumb: {
+    position: 'absolute',
+    top: -6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  tokenLimitsGrid: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  tokenLimitItem: {
+    flex: 1,
+  },
+  tokenLimitLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  tokenInput: {
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
+  penaltySection: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  penaltyLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  penaltyDescription: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+  numericInput: {
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: theme.colors.text,
+    textAlign: 'center',
+    width: 80,
   },
 });
 

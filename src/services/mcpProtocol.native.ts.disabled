@@ -1,0 +1,64 @@
+// Native-only MCP Protocol Service - Full SDK implementation
+// This file will only be loaded on native platforms
+
+import { supabaseService } from './supabase';
+
+// Native MCP SDK loading with fallbacks
+let Client: any, SSEClientTransport: any, StdioClientTransport: any;
+
+// Synchronous loading for native platforms
+try {
+  const clientModule = require('@modelcontextprotocol/sdk/client/index.js');
+  const sseModule = require('@modelcontextprotocol/sdk/client/sse.js');
+  const stdioModule = require('@modelcontextprotocol/sdk/client/stdio.js');
+  
+  Client = clientModule.Client;
+  SSEClientTransport = sseModule.SSEClientTransport;
+  StdioClientTransport = stdioModule.StdioClientTransport;
+  
+  console.log('MCP SDK loaded successfully on native platform');
+} catch (error) {
+  console.warn('Failed to load MCP SDK:', error);
+  // Fallback to mock implementations
+  Client = class MockClient { constructor() { console.warn('MCP Client not available'); } };
+  SSEClientTransport = class MockSSETransport { constructor() { console.warn('MCP SSE Transport not available'); } };
+  StdioClientTransport = class MockStdioTransport { constructor() { console.warn('MCP Stdio Transport not available'); } };
+}
+
+// Re-export all interfaces
+export * from './mcpProtocol.web';
+
+// Native MCP Protocol Service with full functionality
+class NativeMCPProtocolService {
+  private clients: Map<string, any> = new Map();
+  private transports: Map<string, any> = new Map();
+  private connectionPromises: Map<string, Promise<void>> = new Map();
+
+  /**
+   * Check if MCP is available
+   */
+  isAvailable(): boolean {
+    return !!Client && Client.name !== 'MockClient';
+  }
+
+  /**
+   * Get available MCP servers
+   */
+  async getAvailableServers() {
+    // Full native implementation would go here
+    // For now, return empty array until SDK is loaded
+    if (!this.isAvailable()) {
+      return [];
+    }
+    
+    // TODO: Implement native MCP server discovery
+    return [];
+  }
+
+  // TODO: Implement all other methods from the web version but with real functionality
+  // For now, delegate to web version to maintain compatibility
+}
+
+// For now, export the web version to maintain compatibility
+// This can be replaced with NativeMCPProtocolService once fully implemented
+export { mcpProtocolService } from './mcpProtocol.web';

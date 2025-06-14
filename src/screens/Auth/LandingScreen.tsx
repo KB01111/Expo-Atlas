@@ -11,7 +11,7 @@ import {
   StatusBar,
   ImageBackground,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from '../../components/ui';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useOAuth, useSignIn, useSignUp } from '@clerk/clerk-expo';
@@ -402,7 +402,6 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     minWidth: Platform.OS === 'web' ? 140 : 120,
-    backdropFilter: 'blur(10px)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabaseService } from '../../services/supabase';
 import openAIAgentsService from '../../services/openaiAgentsSimple';
@@ -108,6 +109,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
 
 const AgentsScreen: React.FC = () => {
   const { theme } = useTheme();
+  const navigation = useNavigation();
   const sharedStyles = createSharedStyles(theme);
   const styles = createStyles(theme);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -264,6 +266,14 @@ const AgentsScreen: React.FC = () => {
     }
   };
 
+  const handleOpenAgentBuilder = () => {
+    navigation.navigate('AgentBuilder' as never);
+  };
+
+  const handleOpenMarketplace = () => {
+    navigation.navigate('AgentMarketplace' as never);
+  };
+
   const renderAgent = ({ item, index }: { item: Agent; index: number }) => (
     <AnimatedView animation="slideUp" delay={index * 50}>
       <Card 
@@ -387,8 +397,48 @@ const AgentsScreen: React.FC = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
-        <Text style={sharedStyles.headerTitle}>Agents</Text>
-        <Text style={sharedStyles.headerSubtitle}>Manage your AI agents</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={sharedStyles.headerTitle}>Agents</Text>
+            <Text style={sharedStyles.headerSubtitle}>Manage your AI agents</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={handleOpenMarketplace}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Ionicons name="storefront" size={16} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
+                Marketplace
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleOpenAgentBuilder}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <Ionicons name="construct" size={16} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>
+                Builder
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </LinearGradient>
 
       <View style={sharedStyles.contentSpaced}>
