@@ -3,11 +3,12 @@
   "version": "1.1.0",
   "main": "index.ts",
   "scripts": {
-    "start": "expo start",
-    "web": "expo start --web",
-    "build": "expo export --platform web",
-    "android": "expo run:android",
-    "ios": "expo run:ios"
+    "start": "npx @expo/cli start",
+    "web": "npx @expo/cli start --web",
+    "build": "npx @expo/cli export --platform web",
+    "android": "npx @expo/cli run:android",
+    "ios": "npx @expo/cli run:ios",
+    "tunnel": "npx @expo/cli start --tunnel"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.13.0",
@@ -54,7 +55,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@expo/cli": "^0.22.3",
     "@types/react": "~18.2.79",
+    "metro": "~0.80.12",
+    "metro-core": "~0.80.12",
     "typescript": "~5.3.3"
   },
   "resolutions": {
