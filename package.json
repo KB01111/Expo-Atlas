@@ -3,12 +3,14 @@
   "version": "1.1.0",
   "main": "index.ts",
   "scripts": {
-    "start": "npx @expo/cli start",
-    "web": "npx @expo/cli start --web",
-    "build": "npx @expo/cli export --platform web",
-    "android": "npx @expo/cli run:android",
-    "ios": "npx @expo/cli run:ios",
-    "tunnel": "npx @expo/cli start --tunnel"
+    "start": "expo start",
+    "web": "expo start --web",
+    "build": "expo export --platform web",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "tunnel": "expo start --tunnel",
+    "fix": "rm -rf node_modules package-lock.json && npm install",
+    "start-safe": "npx @expo/cli@0.18.23 start"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.13.0",
