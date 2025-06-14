@@ -30,7 +30,10 @@
       "env": {
         "NODE_ENV": "production"
       },
-      "channel": "preview"
+      "channel": "preview",
+      "cache": {
+        "disabled": false
+      }
     },
     "production": {
       "android": {
