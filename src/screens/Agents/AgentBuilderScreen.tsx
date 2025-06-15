@@ -104,7 +104,7 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
     max_tokens: 4096,
     max_completion_tokens: 4096,
     max_prompt_tokens: 32000,
-    response_format: 'auto' as 'auto' | 'text' | 'json_object',
+    response_format: 'text' as 'text' | 'json_object',
     timeout_seconds: 60,
     max_retries: 3,
     fallback_behavior: 'error' as 'error' | 'default_response' | 'escalate',
@@ -527,9 +527,7 @@ const AgentBuilderScreen: React.FC<AgentBuilderScreenProps> = ({ route, navigati
         max_tokens: advancedForm.max_tokens,
         max_completion_tokens: advancedForm.max_completion_tokens,
         max_prompt_tokens: advancedForm.max_prompt_tokens,
-        response_format: advancedForm.response_format === 'auto' ? 'auto' : 
-                        advancedForm.response_format === 'text' ? { type: 'text' } :
-                        { type: 'json_object' },
+        response_format: advancedForm.response_format === 'text' ? 'text' : 'json_object',
         parallel_tool_calls: toolsForm.parallel_tool_calls,
         metadata: {
           category: basicForm.category,
@@ -2141,37 +2139,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.success,
     fontWeight: '500',
   },
-  sliderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  sliderLabel: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    fontWeight: '500',
-  },
-  sliderTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: theme.colors.border,
-    borderRadius: 2,
-    position: 'relative',
-  },
-  sliderFill: {
-    height: 4,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 2,
-  },
-  sliderThumb: {
-    position: 'absolute',
-    top: -6,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: theme.colors.primary,
-    marginLeft: -8,
-  },
   radioGroup: {
     gap: 12,
   },
@@ -2307,125 +2274,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   // Enhanced Model Selection Styles
-  modelCategory: {
-    marginBottom: 24,
-  },
-  modelCategoryTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: 4,
-  },
-  modelCategoryDescription: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  modelGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  modelCard: {
-    flex: 1,
-    minWidth: width > 768 ? '45%' : '100%',
-    maxWidth: width > 768 ? '48%' : '100%',
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    position: 'relative',
-  },
-  modelCardSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primary + '10',
-  },
-  modelCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  modelCardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: theme.colors.text,
-    flex: 1,
-  },
-  modelCardTitleSelected: {
-    color: theme.colors.primary,
-  },
-  modelCardDescription: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  modelCapabilities: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 8,
-  },
-  capabilityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: theme.colors.border,
-    gap: 4,
-  },
-  capabilityText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  modelPricing: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  pricingText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    fontWeight: '500',
-  },
-  contextWindow: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  selectedIndicator: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-  },
-  // Enhanced Tool Configuration Styles
-  toolConfigOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: 12,
-  },
-  toolConfigSection: {
-    marginTop: 16,
-  },
-  toolConfigLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 12,
-  },
   radioContent: {
     flex: 1,
     marginLeft: 12,
@@ -2434,45 +2282,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 2,
-    lineHeight: 16,
-  },
-  // Enhanced Advanced Configuration Styles
-  tokenLimitsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  tokenLimitItem: {
-    flex: 1,
-  },
-  tokenLimitLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: theme.colors.text,
-    marginBottom: 8,
-  },
-  tokenInput: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: theme.colors.text,
-    backgroundColor: theme.colors.surface,
-    textAlign: 'center',
-  },
-  penaltySection: {
-    marginBottom: 20,
-  },
-  penaltyLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: theme.colors.text,
-    marginBottom: 4,
-  },
-  penaltyDescription: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginBottom: 8,
     lineHeight: 16,
   },
   // Enhanced Files Step Styles
@@ -2654,7 +2463,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontWeight: '500',
   },
   
-  // Enhanced Model Selection Styles
   modelCategory: {
     marginBottom: 24,
   },

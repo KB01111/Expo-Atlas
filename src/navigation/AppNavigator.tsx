@@ -1,8 +1,9 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { useUser } from '@clerk/clerk-expo';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import LandingScreen from '../screens/Auth/LandingScreen';
 import TabNavigator from './TabNavigator';
@@ -15,7 +16,8 @@ const Stack = createStackNavigator();
 
 const AppNavigator: React.FC = () => {
   const { isSignedIn, isLoaded, user } = useUser();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Debug logging
   console.log('AppNavigator Debug:', {
@@ -40,6 +42,11 @@ const AppNavigator: React.FC = () => {
         screenOptions={{
           headerShown: false,
           cardStyle: { backgroundColor: theme.colors.background },
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          cardStyleInterpolator: Platform.OS === 'ios' 
+            ? CardStyleInterpolators.forHorizontalIOS 
+            : CardStyleInterpolators.forRevealFromBottomAndroid,
         }}
       >
         {isSignedIn ? (
@@ -49,16 +56,24 @@ const AppNavigator: React.FC = () => {
               name="AgentBuilder" 
               component={AgentBuilderScreen}
               options={{
-                presentation: 'modal',
+                presentation: Platform.OS === 'ios' ? 'modal' : 'card',
                 gestureEnabled: true,
+                cardStyleInterpolator: Platform.OS === 'ios' 
+                  ? CardStyleInterpolators.forVerticalIOS 
+                  : CardStyleInterpolators.forRevealFromBottomAndroid,
+                headerShown: false,
               }}
             />
             <Stack.Screen 
               name="AgentMarketplace" 
               component={AgentMarketplaceScreen}
               options={{
-                presentation: 'modal',
+                presentation: Platform.OS === 'ios' ? 'modal' : 'card',
                 gestureEnabled: true,
+                cardStyleInterpolator: Platform.OS === 'ios' 
+                  ? CardStyleInterpolators.forVerticalIOS 
+                  : CardStyleInterpolators.forRevealFromBottomAndroid,
+                headerShown: false,
               }}
             />
             <Stack.Screen 
@@ -67,6 +82,8 @@ const AppNavigator: React.FC = () => {
               options={{
                 presentation: 'card',
                 gestureEnabled: true,
+                cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+                headerShown: false,
               }}
             />
           </>

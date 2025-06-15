@@ -174,6 +174,7 @@ class OpenAIModelsService {
       'gpt-4-turbo': { input_tokens_per_1k: 0.01, output_tokens_per_1k: 0.03 },
       'gpt-4': { input_tokens_per_1k: 0.03, output_tokens_per_1k: 0.06 },
       'gpt-3.5-turbo': { input_tokens_per_1k: 0.0015, output_tokens_per_1k: 0.002 },
+      'o3': { input_tokens_per_1k: 0.06, output_tokens_per_1k: 0.24 },
       'o3-mini': { input_tokens_per_1k: 0.02, output_tokens_per_1k: 0.08 },
       'o4-mini': { input_tokens_per_1k: 0.015, output_tokens_per_1k: 0.06 }
     };
@@ -208,8 +209,14 @@ class OpenAIModelsService {
     if (modelId.includes('gpt-3.5')) {
       return 16385;
     }
-    if (modelId.includes('o3') || modelId.includes('o4')) {
-      return 200000; // Reasoning models typically have large context
+    if (modelId.includes('o3-mini')) {
+      return 200000; // o3-mini context window
+    }
+    if (modelId.includes('o3')) {
+      return 1000000; // o3 full model has massive context window
+    }
+    if (modelId.includes('o4')) {
+      return 200000; // o4 series context window
     }
     
     return 8192; // Default
@@ -240,8 +247,11 @@ class OpenAIModelsService {
     if (modelId.includes('gpt-3.5')) {
       return 'Fast and cost-effective for simpler tasks';
     }
+    if (modelId.includes('o3-mini')) {
+      return 'Compact reasoning model for efficient problem-solving';
+    }
     if (modelId.includes('o3')) {
-      return 'Advanced reasoning model for complex problem-solving';
+      return 'Most advanced reasoning model with exceptional problem-solving capabilities';
     }
     if (modelId.includes('o4-mini')) {
       return 'Compact reasoning model for efficient problem-solving';
@@ -284,6 +294,16 @@ class OpenAIModelsService {
         pricing: { input_tokens_per_1k: 0.015, output_tokens_per_1k: 0.06 },
         context_window: 200000,
         description: 'Compact reasoning model for efficient problem-solving'
+      },
+      {
+        id: 'o3',
+        object: 'model',
+        created: Date.now() / 1000,
+        owned_by: 'openai',
+        capabilities: { vision: false, function_calling: true, reasoning: true },
+        pricing: { input_tokens_per_1k: 0.06, output_tokens_per_1k: 0.24 },
+        context_window: 1000000,
+        description: 'Most advanced reasoning model with exceptional problem-solving capabilities'
       },
       {
         id: 'o3-mini',

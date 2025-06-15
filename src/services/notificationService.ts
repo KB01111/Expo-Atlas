@@ -165,12 +165,12 @@ class NotificationService {
         return false;
       }
 
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
+      const permissionsResponse = await Notifications.getPermissionsAsync();
+      let finalStatus = permissionsResponse.status;
 
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
+      if (permissionsResponse.status !== 'granted') {
+        const requestResponse = await Notifications.requestPermissionsAsync();
+        finalStatus = requestResponse.status;
       }
 
       if (finalStatus !== 'granted') {

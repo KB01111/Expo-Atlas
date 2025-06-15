@@ -1,8 +1,10 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { AuthProvider } from './src/contexts/AuthContext';
@@ -22,12 +24,18 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider publishableKey={publishableKey}>
         <SafeAreaProvider>
-          <ThemeProvider>
-            <AuthProvider>
-              <AppNavigator />
-              <StatusBar style="auto" />
-            </AuthProvider>
-          </ThemeProvider>
+          <ActionSheetProvider>
+            <ThemeProvider>
+              <AuthProvider>
+                <AppNavigator />
+                <StatusBar 
+                  style="auto" 
+                  backgroundColor="transparent"
+                  translucent={Platform.OS === 'android'}
+                />
+              </AuthProvider>
+            </ThemeProvider>
+          </ActionSheetProvider>
         </SafeAreaProvider>
       </ClerkProvider>
     </GestureHandlerRootView>

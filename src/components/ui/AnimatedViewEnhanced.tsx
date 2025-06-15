@@ -10,7 +10,7 @@ import Animated, {
   withSequence,
   withRepeat,
   interpolate,
-  Extrapolate,
+  Extrapolation,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -174,68 +174,68 @@ export const AnimatedViewEnhanced: React.FC<AnimatedViewEnhancedProps> = ({
     switch (preset) {
       case 'fadeIn':
         return {
-          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
         };
       
       case 'fadeOut':
         return {
-          opacity: interpolate(progress.value, [0, 1], [1, 0], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [1, 0], Extrapolation.CLAMP),
         };
       
       case 'slideUp':
         return {
-          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
           transform: [{
-            translateY: interpolate(progress.value, [0, 1], [50, 0], Extrapolate.CLAMP),
+            translateY: interpolate(progress.value, [0, 1], [50, 0], Extrapolation.CLAMP),
           }],
         };
       
       case 'slideDown':
         return {
-          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
           transform: [{
-            translateY: interpolate(progress.value, [0, 1], [-50, 0], Extrapolate.CLAMP),
+            translateY: interpolate(progress.value, [0, 1], [-50, 0], Extrapolation.CLAMP),
           }],
         };
       
       case 'slideLeft':
         return {
-          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
           transform: [{
-            translateX: interpolate(progress.value, [0, 1], [50, 0], Extrapolate.CLAMP),
+            translateX: interpolate(progress.value, [0, 1], [50, 0], Extrapolation.CLAMP),
           }],
         };
       
       case 'slideRight':
         return {
-          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
           transform: [{
-            translateX: interpolate(progress.value, [0, 1], [-50, 0], Extrapolate.CLAMP),
+            translateX: interpolate(progress.value, [0, 1], [-50, 0], Extrapolation.CLAMP),
           }],
         };
       
       case 'scaleIn':
         return {
-          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
           transform: [{
-            scale: interpolate(progress.value, [0, 1], [0.8, 1], Extrapolate.CLAMP),
+            scale: interpolate(progress.value, [0, 1], [0.8, 1], Extrapolation.CLAMP),
           }],
         };
       
       case 'scaleOut':
         return {
-          opacity: interpolate(progress.value, [0, 1], [1, 0], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [1, 0], Extrapolation.CLAMP),
           transform: [{
-            scale: interpolate(progress.value, [0, 1], [1, 0.8], Extrapolate.CLAMP),
+            scale: interpolate(progress.value, [0, 1], [1, 0.8], Extrapolation.CLAMP),
           }],
         };
       
       case 'bounce':
         return {
-          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
           transform: [{
             scale: withSpring(
-              interpolate(progress.value, [0, 1], [0.3, 1], Extrapolate.CLAMP),
+              interpolate(progress.value, [0, 1], [0.3, 1], Extrapolation.CLAMP),
               SPRING_CONFIGS.bouncy
             ),
           }],
@@ -248,7 +248,7 @@ export const AnimatedViewEnhanced: React.FC<AnimatedViewEnhancedProps> = ({
               progress.value,
               [0, 0.5, 1],
               [1, 1.05, 1],
-              Extrapolate.CLAMP
+              Extrapolation.CLAMP
             ),
           }],
         };
@@ -260,7 +260,7 @@ export const AnimatedViewEnhanced: React.FC<AnimatedViewEnhancedProps> = ({
               progress.value,
               [0, 0.2, 0.4, 0.6, 0.8, 1],
               [0, -10, 10, -10, 10, 0],
-              Extrapolate.CLAMP
+              Extrapolation.CLAMP
             ),
           }],
         };
@@ -268,15 +268,15 @@ export const AnimatedViewEnhanced: React.FC<AnimatedViewEnhancedProps> = ({
       case 'rotate':
         return {
           transform: [{
-            rotate: `${interpolate(progress.value, [0, 1], [0, 360], Extrapolate.CLAMP)}deg`,
+            rotate: `${interpolate(progress.value, [0, 1], [0, 360], Extrapolation.CLAMP)}deg`,
           }],
         };
       
       case 'flip':
         return {
-          opacity: interpolate(progress.value, [0, 0.5, 1], [0, 0, 1], Extrapolate.CLAMP),
+          opacity: interpolate(progress.value, [0, 0.5, 1], [0, 0, 1], Extrapolation.CLAMP),
           transform: [{
-            rotateY: `${interpolate(progress.value, [0, 1], [90, 0], Extrapolate.CLAMP)}deg`,
+            rotateY: `${interpolate(progress.value, [0, 1], [90, 0], Extrapolation.CLAMP)}deg`,
           }],
         };
       

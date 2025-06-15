@@ -207,7 +207,8 @@ const AgentChatInterface: React.FC<AgentChatInterfaceProps> = ({
             if (message.role === 'assistant') {
               // We'll get token usage from the execution result
               setExecutionStats(prev => ({
-                ...prev,
+                tokensUsed: prev?.tokensUsed || 0,
+                cost: prev?.cost || 0,
                 responseTime
               }));
             }

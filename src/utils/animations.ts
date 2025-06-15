@@ -7,7 +7,7 @@ import {
   withRepeat,
   Easing,
   interpolate,
-  Extrapolate,
+  Extrapolation,
   runOnJS
 } from 'react-native-reanimated';
 
@@ -169,7 +169,7 @@ export const GESTURE_CONFIGS = {
 export const createInterpolation = (
   inputRange: number[],
   outputRange: number[],
-  extrapolate: 'clamp' | 'extend' | 'identity' = 'clamp'
+  extrapolate: Extrapolation = Extrapolation.CLAMP
 ) => (value: number) => interpolate(value, inputRange, outputRange, extrapolate);
 
 // Common interpolations

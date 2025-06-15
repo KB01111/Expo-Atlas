@@ -171,12 +171,17 @@ export interface Document {
 export interface AppTheme {
   colors: {
     primary: string;
+    primaryDark: string;
     secondary: string;
+    secondaryDark: string;
     background: string;
     surface: string;
+    surfaceElevated: string;
     text: string;
     textSecondary: string;
+    textTertiary: string;
     border: string;
+    borderLight: string;
     error: string;
     success: string;
     warning: string;
@@ -184,14 +189,22 @@ export interface AppTheme {
     info: string;
     surfaceHover: string;
     overlay: string;
+    backgroundSecondary: string;
+    surfaceDisabled: string;
+    textDisabled: string;
+    shadowColor: string;
   };
   gradients: {
     primary: readonly [string, string, ...string[]];
+    secondary: readonly [string, string, ...string[]];
     hero: readonly [string, string, ...string[]];
     card: readonly [string, string, ...string[]];
     subtle: readonly [string, string, ...string[]];
     accent: readonly [string, string, ...string[]];
     warm: readonly [string, string, ...string[]];
+    cool: readonly [string, string, ...string[]];
+    success: readonly [string, string, ...string[]];
+    glass: readonly [string, string, ...string[]];
   };
   spacing: {
     xs: number;
@@ -201,6 +214,56 @@ export interface AppTheme {
     xl: number;
     xxl: number;
     xxxl: number;
+    xxxxl: number;
+  };
+  typography: {
+    // Display typography
+    displayLarge: { fontSize: number; fontWeight: '900'; lineHeight: number; letterSpacing: number };
+    displayMedium: { fontSize: number; fontWeight: '900'; lineHeight: number; letterSpacing: number };
+    displaySmall: { fontSize: number; fontWeight: '900'; lineHeight: number; letterSpacing: number };
+    
+    // Headline typography
+    headlineLarge: { fontSize: number; fontWeight: '700'; lineHeight: number; letterSpacing: number };
+    headlineMedium: { fontSize: number; fontWeight: '700'; lineHeight: number; letterSpacing: number };
+    headlineSmall: { fontSize: number; fontWeight: '700'; lineHeight: number; letterSpacing: number };
+    
+    // Title typography
+    titleLarge: { fontSize: number; fontWeight: '600'; lineHeight: number; letterSpacing: number };
+    titleMedium: { fontSize: number; fontWeight: '600'; lineHeight: number; letterSpacing: number };
+    titleSmall: { fontSize: number; fontWeight: '600'; lineHeight: number; letterSpacing: number };
+    
+    // Body typography
+    bodyLarge: { fontSize: number; fontWeight: '400'; lineHeight: number; letterSpacing: number };
+    bodyMedium: { fontSize: number; fontWeight: '400'; lineHeight: number; letterSpacing: number };
+    bodySmall: { fontSize: number; fontWeight: '400'; lineHeight: number; letterSpacing: number };
+    
+    // Label typography
+    labelLarge: { fontSize: number; fontWeight: '500'; lineHeight: number; letterSpacing: number };
+    labelMedium: { fontSize: number; fontWeight: '500'; lineHeight: number; letterSpacing: number };
+    labelSmall: { fontSize: number; fontWeight: '500'; lineHeight: number; letterSpacing: number };
+  };
+  layout: {
+    // Consistent layout spacing
+    screenPadding: number;
+    screenPaddingSmall: number;
+    cardPadding: number;
+    cardPaddingSmall: number;
+    listItemPadding: number;
+    sectionSpacing: number;
+    itemSpacing: number;
+    
+    // Component sizes
+    buttonHeight: number;
+    buttonHeightSmall: number;
+    buttonHeightLarge: number;
+    inputHeight: number;
+    headerHeight: number;
+    tabBarHeight: number;
+    
+    // Grid system
+    gridGutter: number;
+    gridMargin: number;
+    maxContentWidth: number;
   };
   borderRadius: {
     xs: number;
@@ -212,10 +275,13 @@ export interface AppTheme {
     full: number;
   };
   shadows: {
+    none: any;
+    xs: any;
     sm: any;
     md: any;
     lg: any;
     xl: any;
+    colored: any;
   };
 }
 

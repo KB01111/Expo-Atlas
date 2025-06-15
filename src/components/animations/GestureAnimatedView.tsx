@@ -10,7 +10,7 @@ import Animated, {
   withSequence,
   runOnJS,
   interpolate,
-  Extrapolate,
+  Extrapolation,
 } from 'react-native-reanimated';
 import { SPRING_CONFIGS, DURATIONS } from '../../utils/animations';
 
@@ -118,7 +118,7 @@ export const GestureAnimatedView: React.FC<GestureAnimatedViewProps> = ({
       panContext.value = { x: translateX.value, y: translateY.value };
       onPanStart && runOnJS(onPanStart)();
     })
-    .onUpdate((event) => {
+    .onUpdate((event: any) => {
       translateX.value = panContext.value.x + event.translationX;
       translateY.value = panContext.value.y + event.translationY;
     })
@@ -137,7 +137,7 @@ export const GestureAnimatedView: React.FC<GestureAnimatedViewProps> = ({
       pinchContext.value = { scale: scale.value };
       onPinchStart && runOnJS(onPinchStart)();
     })
-    .onUpdate((event) => {
+    .onUpdate((event: any) => {
       const newScale = pinchContext.value.scale * event.scale;
       scale.value = Math.min(Math.max(newScale, minScale), maxScale);
     })

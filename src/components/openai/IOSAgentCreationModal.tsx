@@ -1718,21 +1718,6 @@ const createStyles = (theme: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  container: {
-    flex: 1,
-    marginTop: Platform.OS === 'ios' ? (isIPad ? 100 : 60) : 0,
-    borderTopLeftRadius: isIPad ? 20 : 16,
-    borderTopRightRadius: isIPad ? 20 : 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 20,
-  },
   safeArea: {
     flex: 1,
   },
@@ -1746,35 +1731,12 @@ const createStyles = (theme: any) => StyleSheet.create({
     borderRadius: 2,
   },
   
-  // Header styles
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   closeButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 22,
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-    textAlign: 'center',
   },
   actionButton: {
     width: 60,
@@ -1786,360 +1748,23 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Step indicator styles
-  stepIndicatorContainer: {
-    maxHeight: 80,
-  },
-  stepIndicatorContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  stepIndicatorItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    minWidth: 140,
-  },
-  stepIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-    borderWidth: 2,
-  },
   stepContentInner: {
     marginLeft: 42,
-  },
-  stepTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  stepDescription: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  
-  // Content styles
-  content: {
-    flex: 1,
-  },
-  stepContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  sectionCard: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
   },
   sectionDescription: {
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 16,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   
-  // Avatar styles
-  avatarContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  avatarOption: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  avatarEmoji: {
-    fontSize: 24,
-  },
-  
-  // Input styles
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    minHeight: 48,
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  largeTextArea: {
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
   codeArea: {
     minHeight: 120,
     textAlignVertical: 'top',
     fontSize: 14,
   },
-  characterCount: {
-    fontSize: 12,
-    textAlign: 'right',
-    marginTop: 4,
-  },
   inputDescription: {
     fontSize: 12,
     marginTop: 4,
-    lineHeight: 16,
-  },
-  
-  // Category styles
-  categoryRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 6,
-  },
-  categoryEmoji: {
-    fontSize: 16,
-  },
-  categoryText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  
-  // Model styles
-  modelOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  modelInfo: {
-    flex: 1,
-  },
-  modelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  modelName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  modelBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  modelBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  modelDescription: {
-    fontSize: 14,
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  modelPricing: {
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
-  checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-  },
-  
-  // Option styles
-  optionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  optionChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 6,
-  },
-  optionEmoji: {
-    fontSize: 14,
-  },
-  optionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  
-  // Segmented control styles
-  segmentedControl: {
-    flexDirection: 'row',
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-  },
-  segmentedOption: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentedText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  
-  // Tag styles
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-  },
-  tagText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  
-  // List item styles
-  listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  listItemAction: {
-    padding: 4,
-  },
-  addItemButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    gap: 6,
-  },
-  addItemText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  
-  // Tool styles
-  toolOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  toolIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  toolInfo: {
-    flex: 1,
-  },
-  toolName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  toolDescription: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  
-  // Function styles
-  emptyFunctions: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  functionsList: {
-    gap: 8,
-  },
-  functionItem: {
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  functionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  functionName: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  functionDescription: {
-    fontSize: 12,
     lineHeight: 16,
   },
   
@@ -2395,9 +2020,6 @@ const createStyles = (theme: any) => StyleSheet.create({
     borderWidth: 1,
     gap: 6,
   },
-  nextButton: {
-    borderWidth: 0,
-  },
   navButtonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -2499,9 +2121,6 @@ const createStyles = (theme: any) => StyleSheet.create({
     justifyContent: 'center',
     marginRight: 10,
     borderWidth: 2,
-  },
-  stepContent: {
-    marginLeft: 42,
   },
   stepTitle: {
     fontSize: 14,
@@ -2847,6 +2466,15 @@ const createStyles = (theme: any) => StyleSheet.create({
   progressText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  functionsList: {
+    gap: 12,
+  },
+  functionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
 });
 

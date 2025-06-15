@@ -2,8 +2,7 @@
 import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { View, ViewStyle } from 'react-native';
 import LottieView from 'lottie-react-native';
-import { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withSequence } from 'react-native-reanimated';
-import Animated from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withSequence } from 'react-native-reanimated';
 
 export interface LottieAnimationRef {
   play: () => void;

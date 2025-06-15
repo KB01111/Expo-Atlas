@@ -6,13 +6,16 @@ import {
   ScrollView,
   RefreshControl,
   Dimensions,
+  ViewStyle,
+  Platform,
 } from 'react-native';
-import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { createSharedStyles, getStatusColor } from '../../styles/shared';
-import { Card, AnimatedView } from '../../components/ui';
+import { Card, AnimatedView, Button, StatusBadge, Typography } from '../../components/ui';
+import { MotiView } from '../../components/animations';
 
 // Conditional imports for web compatibility
 let LineChart: any, BarChart: any;
@@ -121,6 +124,7 @@ const DashboardScreen: React.FC = () => {
   const { theme, isDark } = useTheme();
   const sharedStyles = createSharedStyles(theme);
   const styles = createStyles(theme);
+  const insets = useSafeAreaInsets();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -205,134 +209,479 @@ const DashboardScreen: React.FC = () => {
 
   return (
     <ScrollView
-      style={sharedStyles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      style={[
+        sharedStyles.container, 
+        { 
+          backgroundColor: theme.colors.background,
+          paddingTop: Platform.OS === 'ios' ? insets.top : 0,
+        }
+      ]}
+      contentContainerStyle={{
+        paddingBottom: Platform.OS === 'ios' ? insets.bottom + 100 : 100,
+      }}
+      refreshControl={
+        <RefreshControl 
+          refreshing={refreshing} 
+          onRefresh={onRefresh}
+          tintColor={theme.colors.primary}
+          colors={[theme.colors.primary]}
+        />
+      }
+      showsVerticalScrollIndicator={false}
+      bounces={Platform.OS === 'ios'}
     >
-      <LinearGradient
-        colors={theme.gradients.primary}
-        style={sharedStyles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+      {/* Modern Hero Section */}
+      <MotiView
+        from={{ opacity: 0, translateY: -20 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'timing', duration: 800 }}
       >
-        <Text style={sharedStyles.headerTitle}>Dashboard</Text>
-        <Text style={sharedStyles.headerSubtitle}>Real-time system overview</Text>
-      </LinearGradient>
+        <LinearGradient
+          colors={theme.gradients.hero}
+          style={[
+            sharedStyles.header,
+            {
+              borderBottomLeftRadius: theme.borderRadius.xxl,
+              borderBottomRightRadius: theme.borderRadius.xxl,
+              paddingBottom: theme.spacing.xxxl,
+              marginBottom: -theme.spacing.xl,
+            }
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View style={{ flex: 1 }}>
+              <Typography variant="displaySmall" style={{ color: '#FFFFFF', marginBottom: theme.spacing.sm }}>
+                Welcome back! 👋
+              </Typography>
+              <Typography variant="bodyLarge" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                Here's what's happening with your AI agents today
+              </Typography>
+            </View>
+            
+            <MotiView
+              from={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', delay: 300 }}
+            >
+              <StatusBadge 
+                status="online" 
+                variant="glass" 
+                size="sm"
+                customIcon="pulse"
+                style={{ marginTop: theme.spacing.sm }}
+              />
+            </MotiView>
+          </View>
 
-      <View style={sharedStyles.contentSpaced}>
-        {/* Quick Stats Grid */}
+          {/* Quick Action Button */}
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'timing', duration: 600, delay: 400 }}
+            style={{ marginTop: theme.spacing.xl }}
+          >
+            <Button
+              title="Create New Agent"
+              variant="glass"
+              size="md"
+              icon={<Ionicons name="add-circle" size={20} color="#FFFFFF" />}
+              onPress={() => {/* Navigate to agent creation */}}
+              style={{ alignSelf: 'flex-start' }}
+            />
+          </MotiView>
+        </LinearGradient>
+      </MotiView>
+
+      <View style={[sharedStyles.contentSpaced, { paddingTop: theme.spacing.xxl }]}>
+        {/* Modern Stats Cards */}
         <View style={styles.metricsGrid}>
-          <AnimatedView animation="slideUp" delay={100}>
-            <Card variant="elevated" size="md" style={styles.metricCard}>
+          <MotiView
+            from={{ opacity: 0, translateY: 30 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', delay: 100 }}
+          >
+            <Card 
+              variant="elevated" 
+              size="md" 
+              style={[styles.metricCard, { backgroundColor: theme.colors.surface } as ViewStyle]}
+              glowEffect={true}
+              borderRadius="xxl"
+              shadow="lg"
+            >
               <View style={styles.metricHeader}>
-                <Ionicons name="people" size={24} color={theme.colors.primary} />
-                <Text style={[styles.metricValue, { color: theme.colors.primary }]}>
+                <View style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: theme.borderRadius.full,
+                  backgroundColor: `${theme.colors.primary}15`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: theme.spacing.md,
+                }}>
+                  <Ionicons name="people" size={24} color={theme.colors.primary} />
+                </View>
+                <Typography variant="displaySmall" style={{ color: theme.colors.primary, marginBottom: theme.spacing.xs }}>
                   {metrics.activeAgents}/{metrics.totalAgents}
-                </Text>
+                </Typography>
               </View>
-              <Text style={styles.metricLabel}>Active Agents</Text>
+              <Typography variant="labelLarge" style={{ color: theme.colors.textSecondary }}>
+                Active Agents
+              </Typography>
+              <View style={{
+                marginTop: theme.spacing.sm,
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+                <StatusBadge 
+                  status={metrics.activeAgents > 0 ? "online" : "offline"} 
+                  variant="subtle" 
+                  size="xs"
+                />
+                <Typography variant="bodySmall" style={{ color: theme.colors.textTertiary, marginLeft: theme.spacing.sm }}>
+                  {((metrics.activeAgents / metrics.totalAgents) * 100).toFixed(0)}% active
+                </Typography>
+              </View>
             </Card>
-          </AnimatedView>
+          </MotiView>
 
-          <AnimatedView animation="slideUp" delay={200}>
-            <Card variant="elevated" size="md" style={styles.metricCard}>
+          <MotiView
+            from={{ opacity: 0, translateY: 30 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', delay: 200 }}
+          >
+            <Card 
+              variant="elevated" 
+              size="md" 
+              style={[styles.metricCard, { backgroundColor: theme.colors.surface } as ViewStyle]}
+              glowEffect={true}
+              borderRadius="xxl"
+              shadow="lg"
+            >
               <View style={styles.metricHeader}>
-                <Ionicons name="checkmark-circle" size={24} color={theme.colors.success} />
-                <Text style={[styles.metricValue, { color: theme.colors.success }]}>
+                <View style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: theme.borderRadius.full,
+                  backgroundColor: `${theme.colors.success}15`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: theme.spacing.md,
+                }}>
+                  <Ionicons name="checkmark-circle" size={24} color={theme.colors.success} />
+                </View>
+                <Typography variant="displaySmall" style={{ color: theme.colors.success, marginBottom: theme.spacing.xs }}>
                   {metrics.completedTasks}
-                </Text>
+                </Typography>
               </View>
-              <Text style={styles.metricLabel}>Completed Tasks</Text>
+              <Typography variant="labelLarge" style={{ color: theme.colors.textSecondary }}>
+                Completed Tasks
+              </Typography>
+              <View style={{
+                marginTop: theme.spacing.sm,
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+                <StatusBadge 
+                  status="success" 
+                  variant="subtle" 
+                  size="xs"
+                />
+                <Typography variant="bodySmall" style={{ color: theme.colors.textTertiary, marginLeft: theme.spacing.sm }}>
+                  +{Math.floor(Math.random() * 20) + 5} today
+                </Typography>
+              </View>
             </Card>
-          </AnimatedView>
+          </MotiView>
 
-          <AnimatedView animation="slideUp" delay={300}>
-            <Card variant="elevated" size="md" style={styles.metricCard}>
+          <MotiView
+            from={{ opacity: 0, translateY: 30 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', delay: 300 }}
+          >
+            <Card 
+              variant="elevated" 
+              size="md" 
+              style={[styles.metricCard, { backgroundColor: theme.colors.surface } as ViewStyle]}
+              glowEffect={true}
+              borderRadius="xxl"
+              shadow="lg"
+            >
               <View style={styles.metricHeader}>
-                <Ionicons name="trending-up" size={24} color={theme.colors.accent} />
-                <Text style={[styles.metricValue, { color: theme.colors.accent }]}>
+                <View style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: theme.borderRadius.full,
+                  backgroundColor: `${theme.colors.accent}15`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: theme.spacing.md,
+                }}>
+                  <Ionicons name="trending-up" size={24} color={theme.colors.accent} />
+                </View>
+                <Typography variant="displaySmall" style={{ color: theme.colors.accent, marginBottom: theme.spacing.xs }}>
                   {metrics.averageSuccessRate.toFixed(1)}%
-                </Text>
+                </Typography>
               </View>
-              <Text style={styles.metricLabel}>Success Rate</Text>
+              <Typography variant="labelLarge" style={{ color: theme.colors.textSecondary }}>
+                Success Rate
+              </Typography>
+              <View style={{
+                marginTop: theme.spacing.sm,
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+                <StatusBadge 
+                  status={metrics.averageSuccessRate > 90 ? "success" : metrics.averageSuccessRate > 70 ? "warning" : "error"} 
+                  variant="subtle" 
+                  size="xs"
+                />
+                <Typography variant="bodySmall" style={{ color: theme.colors.textTertiary, marginLeft: theme.spacing.sm }}>
+                  {metrics.averageSuccessRate > 90 ? 'Excellent' : metrics.averageSuccessRate > 70 ? 'Good' : 'Needs improvement'}
+                </Typography>
+              </View>
             </Card>
-          </AnimatedView>
+          </MotiView>
 
-          <AnimatedView animation="slideUp" delay={400}>
-            <Card variant="elevated" size="md" style={styles.metricCard}>
+          <MotiView
+            from={{ opacity: 0, translateY: 30 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', delay: 400 }}
+          >
+            <Card 
+              variant="elevated" 
+              size="md" 
+              style={[styles.metricCard, { backgroundColor: theme.colors.surface } as ViewStyle]}
+              glowEffect={true}
+              borderRadius="xxl"
+              shadow="lg"
+            >
               <View style={styles.metricHeader}>
-                <Ionicons name="card" size={24} color={theme.colors.secondary} />
-                <Text style={[styles.metricValue, { color: theme.colors.secondary }]}>
+                <View style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: theme.borderRadius.full,
+                  backgroundColor: `${theme.colors.secondary}15`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: theme.spacing.md,
+                }}>
+                  <Ionicons name="card" size={24} color={theme.colors.secondary} />
+                </View>
+                <Typography variant="displaySmall" style={{ color: theme.colors.secondary, marginBottom: theme.spacing.xs }}>
                   ${metrics.monthlyCost.toFixed(2)}
-                </Text>
+                </Typography>
               </View>
-              <Text style={styles.metricLabel}>Monthly Cost</Text>
+              <Typography variant="labelLarge" style={{ color: theme.colors.textSecondary }}>
+                Monthly Cost
+              </Typography>
+              <View style={{
+                marginTop: theme.spacing.sm,
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+                <StatusBadge 
+                  status={metrics.monthlyCost < 50 ? "success" : metrics.monthlyCost < 100 ? "warning" : "error"} 
+                  variant="subtle" 
+                  size="xs"
+                />
+                <Typography variant="bodySmall" style={{ color: theme.colors.textTertiary, marginLeft: theme.spacing.sm }}>
+                  {metrics.monthlyCost < 50 ? 'Budget-friendly' : metrics.monthlyCost < 100 ? 'Moderate' : 'High usage'}
+                </Typography>
+              </View>
             </Card>
-          </AnimatedView>
+          </MotiView>
         </View>
 
         {/* Charts Section */}
-        <AnimatedView animation="slideUp" delay={500}>
-          <Card variant="elevated" size="lg" style={styles.chartCard}>
-            <View style={styles.chartHeader}>
-              <Ionicons name="bar-chart" size={20} color={theme.colors.primary} />
-              <Text style={styles.chartTitle}>Task Activity (7 days)</Text>
+        <MotiView
+          from={{ opacity: 0, translateY: 40 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 500 }}
+        >
+          <Card 
+            variant="glass" 
+            size="lg" 
+            style={[styles.chartCard, { 
+              backgroundColor: theme.colors.surfaceElevated,
+              borderWidth: 1,
+              borderColor: theme.colors.borderLight,
+            } as ViewStyle]}
+            glowEffect={true}
+            borderRadius="xxl"
+            shadow="lg"
+          >
+            <View style={[styles.chartHeader, { marginBottom: theme.spacing.lg }]}>
+              <View style={{
+                width: 32,
+                height: 32,
+                borderRadius: theme.borderRadius.md,
+                backgroundColor: `${theme.colors.primary}20`,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Ionicons name="bar-chart" size={18} color={theme.colors.primary} />
+              </View>
+              <Typography variant="titleLarge" style={{ color: theme.colors.text, flex: 1 }}>
+                Task Activity (7 days)
+              </Typography>
+              <StatusBadge status="active" variant="subtle" size="xs" />
             </View>
-            <LineChart
-              data={taskData}
-              width={width - 80}
-              height={200}
-              title="Task Activity"
-              chartConfig={Platform.OS !== 'web' ? chartConfig : undefined}
-              bezier={Platform.OS !== 'web'}
-              style={Platform.OS !== 'web' ? styles.chart : undefined}
-            />
+            <View style={{
+              borderRadius: theme.borderRadius.lg,
+              overflow: 'hidden',
+              backgroundColor: theme.colors.background,
+              padding: theme.spacing.sm,
+            }}>
+              <LineChart
+                data={taskData}
+                width={width - 80}
+                height={200}
+                title="Task Activity"
+                chartConfig={Platform.OS !== 'web' ? chartConfig : undefined}
+                bezier={Platform.OS !== 'web'}
+                style={Platform.OS !== 'web' ? styles.chart : undefined}
+              />
+            </View>
           </Card>
-        </AnimatedView>
+        </MotiView>
 
-        <AnimatedView animation="slideUp" delay={600}>
-          <Card variant="elevated" size="lg" style={styles.chartCard}>
-            <View style={styles.chartHeader}>
-              <Ionicons name="analytics" size={20} color={theme.colors.secondary} />
-              <Text style={styles.chartTitle}>System Performance</Text>
+        <MotiView
+          from={{ opacity: 0, translateY: 40 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 600 }}
+        >
+          <Card 
+            variant="glass" 
+            size="lg" 
+            style={[styles.chartCard, { 
+              backgroundColor: theme.colors.surfaceElevated,
+              borderWidth: 1,
+              borderColor: theme.colors.borderLight,
+            } as ViewStyle]}
+            glowEffect={true}
+            borderRadius="xxl"
+            shadow="lg"
+          >
+            <View style={[styles.chartHeader, { marginBottom: theme.spacing.lg }]}>
+              <View style={{
+                width: 32,
+                height: 32,
+                borderRadius: theme.borderRadius.md,
+                backgroundColor: `${theme.colors.secondary}20`,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Ionicons name="analytics" size={18} color={theme.colors.secondary} />
+              </View>
+              <Typography variant="titleLarge" style={{ color: theme.colors.text, flex: 1 }}>
+                System Performance
+              </Typography>
+              <StatusBadge status="success" variant="subtle" size="xs" />
             </View>
-            <BarChart
-              data={performanceData}
-              width={width - 80}
-              height={200}
-              title="System Performance"
-              yAxisLabel={Platform.OS !== 'web' ? "" : undefined}
-              yAxisSuffix={Platform.OS !== 'web' ? "" : undefined}
-              chartConfig={Platform.OS !== 'web' ? chartConfig : undefined}
-              style={Platform.OS !== 'web' ? styles.chart : undefined}
-            />
+            <View style={{
+              borderRadius: theme.borderRadius.lg,
+              overflow: 'hidden',
+              backgroundColor: theme.colors.background,
+              padding: theme.spacing.sm,
+            }}>
+              <BarChart
+                data={performanceData}
+                width={width - 80}
+                height={200}
+                title="System Performance"
+                yAxisLabel={Platform.OS !== 'web' ? "" : undefined}
+                yAxisSuffix={Platform.OS !== 'web' ? "" : undefined}
+                chartConfig={Platform.OS !== 'web' ? chartConfig : undefined}
+                style={Platform.OS !== 'web' ? styles.chart : undefined}
+              />
+            </View>
           </Card>
-        </AnimatedView>
+        </MotiView>
 
-        <AnimatedView animation="slideUp" delay={700}>
-          <Card variant="elevated" size="lg">
-            <View style={styles.statusHeader}>
-              <Ionicons name="shield-checkmark" size={20} color={theme.colors.success} />
-              <Text style={styles.statusTitle}>System Status</Text>
+        <MotiView
+          from={{ opacity: 0, translateY: 40 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', delay: 700 }}
+        >
+          <Card 
+            variant="elevated" 
+            size="lg" 
+            style={{ 
+              backgroundColor: theme.colors.surfaceElevated,
+              borderWidth: 1,
+              borderColor: theme.colors.borderLight,
+            } as ViewStyle}
+            glowEffect={true}
+            borderRadius="xxl"
+            shadow="lg"
+          >
+            <View style={[styles.statusHeader, { marginBottom: theme.spacing.lg }]}>
+              <View style={{
+                width: 32,
+                height: 32,
+                borderRadius: theme.borderRadius.md,
+                backgroundColor: `${theme.colors.success}20`,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Ionicons name="shield-checkmark" size={18} color={theme.colors.success} />
+              </View>
+              <Typography variant="titleLarge" style={{ color: theme.colors.text, flex: 1 }}>
+                System Status
+              </Typography>
+              <StatusBadge status="online" variant="glass" size="sm" pulsing={true} />
             </View>
-            <View style={styles.statusList}>
-              <View style={styles.statusItem}>
-                <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
-                <Text style={styles.statusText}>API Services</Text>
-                <Text style={[styles.statusBadge, { color: theme.colors.success }]}>Healthy</Text>
+            <View style={[styles.statusList, { gap: theme.spacing.md }]}>
+              <View style={[styles.statusItem, {
+                backgroundColor: theme.colors.backgroundSecondary,
+                padding: theme.spacing.md,
+                borderRadius: theme.borderRadius.lg,
+                borderWidth: 1,
+                borderColor: theme.colors.borderLight,
+              }]}>
+                <StatusBadge status="success" variant="subtle" size="sm" />
+                <Typography variant="bodyLarge" style={{ color: theme.colors.text, flex: 1 }}>
+                  API Services
+                </Typography>
+                <Typography variant="labelMedium" style={{ color: theme.colors.success, fontWeight: '600' }}>
+                  Healthy
+                </Typography>
               </View>
-              <View style={styles.statusItem}>
-                <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
-                <Text style={styles.statusText}>Database</Text>
-                <Text style={[styles.statusBadge, { color: theme.colors.success }]}>Connected</Text>
+              <View style={[styles.statusItem, {
+                backgroundColor: theme.colors.backgroundSecondary,
+                padding: theme.spacing.md,
+                borderRadius: theme.borderRadius.lg,
+                borderWidth: 1,
+                borderColor: theme.colors.borderLight,
+              }]}>
+                <StatusBadge status="success" variant="subtle" size="sm" />
+                <Typography variant="bodyLarge" style={{ color: theme.colors.text, flex: 1 }}>
+                  Database
+                </Typography>
+                <Typography variant="labelMedium" style={{ color: theme.colors.success, fontWeight: '600' }}>
+                  Connected
+                </Typography>
               </View>
-              <View style={styles.statusItem}>
-                <View style={[styles.statusDot, { backgroundColor: theme.colors.warning }]} />
-                <Text style={styles.statusText}>Background Jobs</Text>
-                <Text style={[styles.statusBadge, { color: theme.colors.warning }]}>Slow</Text>
+              <View style={[styles.statusItem, {
+                backgroundColor: theme.colors.backgroundSecondary,
+                padding: theme.spacing.md,
+                borderRadius: theme.borderRadius.lg,
+                borderWidth: 1,
+                borderColor: theme.colors.borderLight,
+              }]}>
+                <StatusBadge status="warning" variant="subtle" size="sm" />
+                <Typography variant="bodyLarge" style={{ color: theme.colors.text, flex: 1 }}>
+                  Background Jobs
+                </Typography>
+                <Typography variant="labelMedium" style={{ color: theme.colors.warning, fontWeight: '600' }}>
+                  Slow
+                </Typography>
               </View>
             </View>
           </Card>
-        </AnimatedView>
+        </MotiView>
       </View>
     </ScrollView>
   );

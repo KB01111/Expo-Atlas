@@ -1,8 +1,12 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform, Dimensions } from 'react-native';
 import { AppTheme } from '../types';
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const isTablet = screenWidth >= 768;
+const isSmallScreen = screenWidth < 375;
+
 export const createSharedStyles = (theme: AppTheme) => StyleSheet.create({
-  // Container styles
+  // Enhanced container styles with iOS optimizations
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -11,6 +15,21 @@ export const createSharedStyles = (theme: AppTheme) => StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: theme.colors.background,
+    paddingTop: Platform.OS === 'ios' ? 0 : 20,
+  },
+
+  screenContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: isTablet ? 32 : isSmallScreen ? 16 : 24,
+  },
+
+  centeredContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.xl,
   },
 
   // Modern card styles with improved spacing and borders
@@ -58,26 +77,127 @@ export const createSharedStyles = (theme: AppTheme) => StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 34,
-    fontWeight: '800',
+    ...theme.typography.displaySmall,
     color: '#FFFFFF',
     marginBottom: theme.spacing.sm,
-    letterSpacing: -0.8,
-    lineHeight: 40,
   },
 
   headerSubtitle: {
-    fontSize: 17,
+    ...theme.typography.bodyLarge,
     color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
-    lineHeight: 24,
   },
 
   // Content area with improved spacing
   content: {
     flex: 1,
-    padding: theme.spacing.lg,
+    padding: theme.layout.screenPadding,
     paddingTop: theme.spacing.md,
+  },
+
+  contentSmall: {
+    flex: 1,
+    padding: theme.layout.screenPaddingSmall,
+    paddingTop: theme.spacing.md,
+  },
+
+  // Typography styles using theme system
+  displayLarge: {
+    ...theme.typography.displayLarge,
+    color: theme.colors.text,
+  },
+
+  displayMedium: {
+    ...theme.typography.displayMedium,
+    color: theme.colors.text,
+  },
+
+  displaySmall: {
+    ...theme.typography.displaySmall,
+    color: theme.colors.text,
+  },
+
+  headlineLarge: {
+    ...theme.typography.headlineLarge,
+    color: theme.colors.text,
+  },
+
+  headlineMedium: {
+    ...theme.typography.headlineMedium,
+    color: theme.colors.text,
+  },
+
+  headlineSmall: {
+    ...theme.typography.headlineSmall,
+    color: theme.colors.text,
+  },
+
+  titleLarge: {
+    ...theme.typography.titleLarge,
+    color: theme.colors.text,
+  },
+
+  titleMedium: {
+    ...theme.typography.titleMedium,
+    color: theme.colors.text,
+  },
+
+  titleSmall: {
+    ...theme.typography.titleSmall,
+    color: theme.colors.text,
+  },
+
+  bodyLarge: {
+    ...theme.typography.bodyLarge,
+    color: theme.colors.text,
+  },
+
+  bodyMedium: {
+    ...theme.typography.bodyMedium,
+    color: theme.colors.text,
+  },
+
+  bodySmall: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.text,
+  },
+
+  labelLarge: {
+    ...theme.typography.labelLarge,
+    color: theme.colors.textSecondary,
+  },
+
+  labelMedium: {
+    ...theme.typography.labelMedium,
+    color: theme.colors.textSecondary,
+  },
+
+  labelSmall: {
+    ...theme.typography.labelSmall,
+    color: theme.colors.textSecondary,
+  },
+
+  // Layout components using theme system
+  listItem: {
+    padding: theme.layout.listItemPadding,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+
+  section: {
+    marginBottom: theme.layout.sectionSpacing,
+  },
+
+  row: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: theme.layout.itemSpacing,
+  },
+
+  column: {
+    flexDirection: 'column' as const,
+    gap: theme.layout.itemSpacing,
   },
 
   contentPadded: {
@@ -195,19 +315,10 @@ export const createSharedStyles = (theme: AppTheme) => StyleSheet.create({
   },
 
   // Layout utilities
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-
-  column: {
-    flexDirection: 'column',
   },
 
   center: {

@@ -11,28 +11,43 @@ interface ThemeContextType {
 
 const lightTheme: AppTheme = {
   colors: {
-    primary: '#4F46E5', // Indigo-600 - Premium brand color
-    secondary: '#06B6D4', // Cyan-500 - Fresh modern accent
-    background: '#FFFFFF', // Pure white for premium feel
-    surface: '#FFFFFF', // Clean white surfaces
-    text: '#0F172A', // Slate-900 - Deep readable text
-    textSecondary: '#64748B', // Slate-500 - Professional gray
-    border: '#F1F5F9', // Slate-100 - Ultra-subtle borders
-    error: '#DC2626', // Red-600 - Professional error
-    success: '#059669', // Emerald-600 - Rich success green
-    warning: '#D97706', // Amber-600 - Warm warning
-    accent: '#7C3AED', // Violet-600 - Elegant purple
-    info: '#0284C7', // Sky-600 - Professional blue
-    surfaceHover: '#F8FAFC', // Slate-50 - Subtle hover
-    overlay: 'rgba(15, 23, 42, 0.6)', // Sophisticated overlay
+    // Original color scheme
+    primary: '#4F46E5', // Indigo
+    primaryDark: '#3730A3', // Darker indigo
+    secondary: '#06B6D4', // Cyan
+    secondaryDark: '#0891B2', // Darker cyan
+    background: '#FFFFFF',
+    surface: '#F8FAFC',
+    surfaceElevated: '#FFFFFF',
+    text: '#1E293B',
+    textSecondary: '#64748B',
+    textTertiary: '#94A3B8',
+    border: '#E2E8F0',
+    borderLight: '#F1F5F9',
+    error: '#EF4444',
+    success: '#10B981',
+    warning: '#F59E0B',
+    accent: '#8B5CF6',
+    info: '#3B82F6',
+    surfaceHover: '#F1F5F9',
+    overlay: 'rgba(0, 0, 0, 0.5)',
+    // Semantic colors for better UX
+    backgroundSecondary: '#F8FAFC',
+    surfaceDisabled: '#F1F5F9',
+    textDisabled: '#CBD5E1',
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
   },
   gradients: {
-    primary: ['#4F46E5', '#7C3AED', '#06B6D4'] as const,
-    hero: ['#4F46E5', '#7C3AED', '#06B6D4'] as const,
-    card: ['#FFFFFF', '#FFFFFF'] as const,
+    primary: ['#4F46E5', '#7C3AED'] as const, // Indigo to purple
+    secondary: ['#06B6D4', '#3B82F6'] as const, // Cyan to blue
+    hero: ['#4F46E5', '#7C3AED', '#EC4899'] as const, // Multi-color hero
+    card: ['#FFFFFF', '#F8FAFC'] as const,
     subtle: ['#F8FAFC', '#FFFFFF'] as const,
-    accent: ['#06B6D4', '#4F46E5'] as const,
+    accent: ['#8B5CF6', '#7C3AED'] as const,
     warm: ['#F59E0B', '#EF4444'] as const,
+    cool: ['#3B82F6', '#06B6D4'] as const,
+    success: ['#10B981', '#059669'] as const,
+    glass: ['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.1)'] as const,
   },
   spacing: {
     xs: 4,
@@ -42,6 +57,56 @@ const lightTheme: AppTheme = {
     xl: 24,
     xxl: 32,
     xxxl: 48,
+    xxxxl: 64,
+  },
+  typography: {
+    // Display typography
+    displayLarge: { fontSize: 57, fontWeight: '900', lineHeight: 64, letterSpacing: -0.25 },
+    displayMedium: { fontSize: 45, fontWeight: '900', lineHeight: 52, letterSpacing: 0 },
+    displaySmall: { fontSize: 36, fontWeight: '900', lineHeight: 44, letterSpacing: 0 },
+    
+    // Headline typography
+    headlineLarge: { fontSize: 32, fontWeight: '700', lineHeight: 40, letterSpacing: 0 },
+    headlineMedium: { fontSize: 28, fontWeight: '700', lineHeight: 36, letterSpacing: 0 },
+    headlineSmall: { fontSize: 24, fontWeight: '700', lineHeight: 32, letterSpacing: 0 },
+    
+    // Title typography
+    titleLarge: { fontSize: 22, fontWeight: '600', lineHeight: 28, letterSpacing: 0 },
+    titleMedium: { fontSize: 18, fontWeight: '600', lineHeight: 24, letterSpacing: 0.15 },
+    titleSmall: { fontSize: 16, fontWeight: '600', lineHeight: 20, letterSpacing: 0.1 },
+    
+    // Body typography
+    bodyLarge: { fontSize: 16, fontWeight: '400', lineHeight: 24, letterSpacing: 0.5 },
+    bodyMedium: { fontSize: 14, fontWeight: '400', lineHeight: 20, letterSpacing: 0.25 },
+    bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 16, letterSpacing: 0.4 },
+    
+    // Label typography
+    labelLarge: { fontSize: 14, fontWeight: '500', lineHeight: 20, letterSpacing: 0.1 },
+    labelMedium: { fontSize: 12, fontWeight: '500', lineHeight: 16, letterSpacing: 0.5 },
+    labelSmall: { fontSize: 10, fontWeight: '500', lineHeight: 14, letterSpacing: 0.5 },
+  },
+  layout: {
+    // Consistent layout spacing
+    screenPadding: 24,
+    screenPaddingSmall: 16,
+    cardPadding: 20,
+    cardPaddingSmall: 16,
+    listItemPadding: 16,
+    sectionSpacing: 32,
+    itemSpacing: 16,
+    
+    // Component sizes
+    buttonHeight: 48,
+    buttonHeightSmall: 40,
+    buttonHeightLarge: 56,
+    inputHeight: 48,
+    headerHeight: 60,
+    tabBarHeight: 84,
+    
+    // Grid system
+    gridGutter: 16,
+    gridMargin: 24,
+    maxContentWidth: 768,
   },
   borderRadius: {
     xs: 2,
@@ -53,61 +118,97 @@ const lightTheme: AppTheme = {
     full: 9999,
   },
   shadows: {
-    sm: {
-      shadowColor: '#000',
+    none: {
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
+    },
+    xs: {
+      shadowColor: '#667EEA',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
       shadowRadius: 2,
       elevation: 1,
     },
+    sm: {
+      shadowColor: '#4F46E5',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 2,
+    },
     md: {
-      shadowColor: '#000',
+      shadowColor: '#4F46E5',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-      elevation: 3,
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      elevation: 4,
     },
     lg: {
-      shadowColor: '#000',
+      shadowColor: '#4F46E5',
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
-      elevation: 6,
+      shadowOpacity: 0.16,
+      shadowRadius: 16,
+      elevation: 8,
     },
     xl: {
-      shadowColor: '#000',
+      shadowColor: '#4F46E5',
       shadowOffset: { width: 0, height: 12 },
       shadowOpacity: 0.2,
-      shadowRadius: 16,
-      elevation: 10,
+      shadowRadius: 24,
+      elevation: 12,
+    },
+    colored: {
+      shadowColor: '#8B5CF6',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 12,
+      elevation: 6,
     },
   },
 };
 
 const darkTheme: AppTheme = {
   colors: {
-    primary: '#6366F1', // Indigo-500 - Vibrant but professional
-    secondary: '#22D3EE', // Cyan-400 - Bright modern accent
-    background: '#0F172A', // Slate-900 - Rich deep background
-    surface: '#1E293B', // Slate-800 - Elevated surfaces
-    text: '#F8FAFC', // Slate-50 - Crisp white text
-    textSecondary: '#94A3B8', // Slate-400 - Balanced secondary
-    border: '#334155', // Slate-700 - Defined borders
-    error: '#EF4444', // Red-500 - Clear error indication
-    success: '#10B981', // Emerald-500 - Vibrant success
-    warning: '#F59E0B', // Amber-500 - Clear warning
-    accent: '#8B5CF6', // Violet-500 - Rich purple accent
-    info: '#3B82F6', // Blue-500 - Professional info
-    surfaceHover: '#334155', // Slate-700 - Interactive feedback
-    overlay: 'rgba(15, 23, 42, 0.8)', // Deep sophisticated overlay
+    // Original dark theme
+    primary: '#6366F1', // Indigo
+    primaryDark: '#4F46E5', // Darker indigo
+    secondary: '#06B6D4', // Cyan
+    secondaryDark: '#0891B2', // Darker cyan
+    background: '#0D1117', // GitHub-inspired dark background
+    surface: '#161B22', // Elevated dark surface
+    surfaceElevated: '#21262D', // Higher elevation surface
+    text: '#F0F6FC', // Crisp light text
+    textSecondary: '#8B949E', // Balanced secondary text
+    textTertiary: '#6E7681', // Subtle tertiary text
+    border: '#30363D', // Soft dark borders
+    borderLight: '#21262D', // Ultra-subtle borders
+    error: '#F85149', // Modern bright error red
+    success: '#56D364', // Fresh success green
+    warning: '#E3B341', // Warm warning amber
+    accent: '#A5A6F6', // Light purple accent
+    info: '#58A6FF', // Clear info blue
+    surfaceHover: '#21262D', // Subtle hover state
+    overlay: 'rgba(13, 17, 23, 0.8)', // Modern dark overlay
+    // New semantic colors for dark mode
+    backgroundSecondary: '#161B22',
+    surfaceDisabled: '#21262D',
+    textDisabled: '#484F58',
+    shadowColor: 'rgba(0, 0, 0, 0.3)',
   },
   gradients: {
-    primary: ['#6366F1', '#8B5CF6', '#22D3EE'] as const,
-    hero: ['#6366F1', '#8B5CF6', '#22D3EE'] as const,
-    card: ['#1E293B', '#334155'] as const,
-    subtle: ['#0F172A', '#1E293B'] as const,
-    accent: ['#22D3EE', '#6366F1'] as const,
-    warm: ['#F59E0B', '#EF4444'] as const,
+    primary: ['#7C3AED', '#5B21B6'] as const, // Rich purple gradient
+    secondary: ['#EC4899', '#BE185D'] as const, // Vibrant pink gradient
+    hero: ['#7C3AED', '#EC4899', '#58A6FF'] as const, // Multi-color hero
+    card: ['#161B22', '#21262D'] as const, // Subtle dark card
+    subtle: ['#0D1117', '#161B22'] as const, // Dark background gradient
+    accent: ['#A5A6F6', '#7C3AED'] as const, // Light-dark purple
+    warm: ['#E3B341', '#F85149'] as const, // Warm amber-red
+    cool: ['#58A6FF', '#7C3AED'] as const, // Cool blue-purple
+    success: ['#56D364', '#2EA043'] as const, // Success green gradient
+    glass: ['rgba(22, 27, 34, 0.8)', 'rgba(22, 27, 34, 0.4)'] as const, // Dark glassmorphism
   },
   spacing: {
     xs: 4,
@@ -117,6 +218,56 @@ const darkTheme: AppTheme = {
     xl: 24,
     xxl: 32,
     xxxl: 48,
+    xxxxl: 64,
+  },
+  typography: {
+    // Display typography
+    displayLarge: { fontSize: 57, fontWeight: '900', lineHeight: 64, letterSpacing: -0.25 },
+    displayMedium: { fontSize: 45, fontWeight: '900', lineHeight: 52, letterSpacing: 0 },
+    displaySmall: { fontSize: 36, fontWeight: '900', lineHeight: 44, letterSpacing: 0 },
+    
+    // Headline typography
+    headlineLarge: { fontSize: 32, fontWeight: '700', lineHeight: 40, letterSpacing: 0 },
+    headlineMedium: { fontSize: 28, fontWeight: '700', lineHeight: 36, letterSpacing: 0 },
+    headlineSmall: { fontSize: 24, fontWeight: '700', lineHeight: 32, letterSpacing: 0 },
+    
+    // Title typography
+    titleLarge: { fontSize: 22, fontWeight: '600', lineHeight: 28, letterSpacing: 0 },
+    titleMedium: { fontSize: 18, fontWeight: '600', lineHeight: 24, letterSpacing: 0.15 },
+    titleSmall: { fontSize: 16, fontWeight: '600', lineHeight: 20, letterSpacing: 0.1 },
+    
+    // Body typography
+    bodyLarge: { fontSize: 16, fontWeight: '400', lineHeight: 24, letterSpacing: 0.5 },
+    bodyMedium: { fontSize: 14, fontWeight: '400', lineHeight: 20, letterSpacing: 0.25 },
+    bodySmall: { fontSize: 12, fontWeight: '400', lineHeight: 16, letterSpacing: 0.4 },
+    
+    // Label typography
+    labelLarge: { fontSize: 14, fontWeight: '500', lineHeight: 20, letterSpacing: 0.1 },
+    labelMedium: { fontSize: 12, fontWeight: '500', lineHeight: 16, letterSpacing: 0.5 },
+    labelSmall: { fontSize: 10, fontWeight: '500', lineHeight: 14, letterSpacing: 0.5 },
+  },
+  layout: {
+    // Consistent layout spacing
+    screenPadding: 24,
+    screenPaddingSmall: 16,
+    cardPadding: 20,
+    cardPaddingSmall: 16,
+    listItemPadding: 16,
+    sectionSpacing: 32,
+    itemSpacing: 16,
+    
+    // Component sizes
+    buttonHeight: 48,
+    buttonHeightSmall: 40,
+    buttonHeightLarge: 56,
+    inputHeight: 48,
+    headerHeight: 60,
+    tabBarHeight: 84,
+    
+    // Grid system
+    gridGutter: 16,
+    gridMargin: 24,
+    maxContentWidth: 768,
   },
   borderRadius: {
     xs: 2,
@@ -128,33 +279,54 @@ const darkTheme: AppTheme = {
     full: 9999,
   },
   shadows: {
-    sm: {
+    none: {
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
+    },
+    xs: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
+      shadowOpacity: 0.4,
       shadowRadius: 2,
+      elevation: 1,
+    },
+    sm: {
+      shadowColor: '#7C3AED',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
       elevation: 2,
     },
     md: {
-      shadowColor: '#000',
+      shadowColor: '#7C3AED',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 6,
+      shadowOpacity: 0.35,
+      shadowRadius: 8,
       elevation: 4,
     },
     lg: {
-      shadowColor: '#000',
+      shadowColor: '#7C3AED',
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.4,
-      shadowRadius: 12,
+      shadowRadius: 16,
       elevation: 8,
     },
     xl: {
-      shadowColor: '#000',
+      shadowColor: '#7C3AED',
       shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.5,
-      shadowRadius: 16,
+      shadowOpacity: 0.45,
+      shadowRadius: 24,
       elevation: 12,
+    },
+    colored: {
+      shadowColor: '#EC4899',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 12,
+      elevation: 6,
     },
   },
 };

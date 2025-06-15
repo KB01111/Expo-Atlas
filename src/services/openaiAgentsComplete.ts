@@ -170,7 +170,10 @@ class OpenAIAgentsCompleteService {
         tool_resources,
         temperature: config.temperature,
         top_p: config.top_p,
-        response_format: config.response_format === 'auto' ? undefined : config.response_format,
+        response_format: config.response_format === 'auto' ? undefined : 
+          config.response_format === 'json_object' ? { type: 'json_object' } :
+          config.response_format === 'json_schema' ? { type: 'json_schema', json_schema: config.json_schema } :
+          undefined,
         metadata: {
           ...config.metadata,
           created_by: config.user_id || 'system',

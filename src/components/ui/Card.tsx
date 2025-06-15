@@ -6,12 +6,15 @@ import { createSharedStyles } from '../../styles/shared';
 
 interface CardProps {
   children: React.ReactNode;
-  variant?: 'default' | 'elevated' | 'outlined' | 'gradient' | 'minimal' | 'glass';
+  variant?: 'default' | 'elevated' | 'outlined' | 'gradient' | 'minimal' | 'glass' | 'neon' | 'soft';
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   onPress?: () => void;
   style?: ViewStyle;
   pressable?: boolean;
   disabled?: boolean;
+  glowEffect?: boolean;
+  borderRadius?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
+  shadow?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'colored';
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -22,6 +25,9 @@ export const Card: React.FC<CardProps> = ({
   style,
   pressable = false,
   disabled = false,
+  glowEffect = false,
+  borderRadius = 'xl',
+  shadow = 'md',
 }) => {
   const { theme } = useTheme();
   const sharedStyles = createSharedStyles(theme);
@@ -30,23 +36,28 @@ export const Card: React.FC<CardProps> = ({
     const sizeStyles = {
       xs: {
         padding: theme.spacing.sm,
-        borderRadius: theme.borderRadius.lg,
+        borderRadius: theme.borderRadius[borderRadius],
+        minHeight: 60,
       },
       sm: {
         padding: theme.spacing.md,
-        borderRadius: theme.borderRadius.xl,
+        borderRadius: theme.borderRadius[borderRadius],
+        minHeight: 80,
       },
       md: {
         padding: theme.spacing.lg,
-        borderRadius: theme.borderRadius.xl,
+        borderRadius: theme.borderRadius[borderRadius],
+        minHeight: 100,
       },
       lg: {
         padding: theme.spacing.xl,
-        borderRadius: theme.borderRadius.xxl,
+        borderRadius: theme.borderRadius[borderRadius],
+        minHeight: 140,
       },
       xl: {
         padding: theme.spacing.xxl,
-        borderRadius: theme.borderRadius.xxl,
+        borderRadius: theme.borderRadius[borderRadius],
+        minHeight: 180,
       },
     };
 
@@ -55,32 +66,49 @@ export const Card: React.FC<CardProps> = ({
         backgroundColor: theme.colors.surface,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        ...theme.shadows.sm,
+        ...(shadow !== 'none' && theme.shadows[shadow]),
       },
       elevated: {
-        backgroundColor: theme.colors.surface,
+        backgroundColor: theme.colors.surfaceElevated,
         borderWidth: 1,
-        borderColor: theme.colors.border,
+        borderColor: theme.colors.borderLight,
         ...theme.shadows.lg,
+        ...(glowEffect && theme.shadows.colored),
       },
       outlined: {
         backgroundColor: 'transparent',
-        borderWidth: 1.5,
+        borderWidth: 2,
         borderColor: theme.colors.border,
+        ...(shadow !== 'none' && theme.shadows[shadow]),
       },
       minimal: {
         backgroundColor: theme.colors.surface,
         borderWidth: 0,
+        ...(shadow !== 'none' && theme.shadows[shadow]),
       },
       glass: {
-        backgroundColor: `${theme.colors.surface}E6`,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         borderWidth: 1,
-        borderColor: `${theme.colors.border}80`,
+        borderColor: 'rgba(255, 255, 255, 0.2)',
         backdropFilter: 'blur(10px)',
-        ...theme.shadows.md,
+        ...theme.shadows.sm,
+      },
+      neon: {
+        backgroundColor: theme.colors.background,
+        borderWidth: 2,
+        borderColor: theme.colors.accent,
+        ...theme.shadows.colored,
+      },
+      soft: {
+        backgroundColor: theme.colors.backgroundSecondary,
+        borderWidth: 1,
+        borderColor: theme.colors.borderLight,
+        ...theme.shadows.xs,
       },
       gradient: {
         borderWidth: 0,
+        ...(shadow !== 'none' && theme.shadows[shadow]),
+        ...(glowEffect && theme.shadows.colored),
       },
     };
 
