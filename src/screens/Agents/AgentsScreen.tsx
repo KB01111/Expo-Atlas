@@ -137,7 +137,31 @@ const AgentsScreen: React.FC = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { showActionSheetWithOptions } = useActionSheet();
+  // Try to use ActionSheet, fallback to Alert if not available
+  let actionSheetHook;
+  try {
+    actionSheetHook = useActionSheet();
+  } catch (error) {
+    console.warn('ActionSheet not available, using fallback');
+  }
+  
+  const showActionSheetWithOptions = (config: any, callback: (index: number) => void) => {
+    if (actionSheetHook?.showActionSheetWithOptions) {
+      actionSheetHook.showActionSheetWithOptions(config, callback);
+    } else {
+      // Fallback to Alert
+      const { options, title, cancelButtonIndex } = config;
+      const buttons = options.slice(0, cancelButtonIndex || options.length).map((option: string, index: number) => ({
+        text: option,
+        onPress: () => callback(index),
+      }));
+      
+      Alert.alert(title || 'Choose Option', '', [
+        ...buttons,
+        { text: 'Cancel', style: 'cancel' }
+      ]);
+    }
+  };
   const sharedStyles = createSharedStyles(theme);
   const styles = createStyles(theme);
   const [agents, setAgents] = useState<Agent[]>([]);
